@@ -1,4 +1,4 @@
-package ignoreme
+package getignore
 
 import (
 	"reflect"

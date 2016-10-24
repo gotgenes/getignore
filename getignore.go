@@ -1,4 +1,4 @@
-package ignoreme
+package getignore
 
 type ignoreFetcher struct {
 	baseUrl string
