@@ -1,4 +1,4 @@
-package getignore
+package main
 
 import (
 	"reflect"
