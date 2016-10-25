@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,12 +25,20 @@ func (fetcher *ignoreFetcher) NameToUrl(name string) string {
 	return fetcher.baseUrl + "/" + name + ".gitignore"
 }
 
-func getNames(f *os.File, namesChannel chan string) {
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		namesChannel <- scanner.Text()
+func getNames(names []string, namesChannel chan string) {
+	for _, v := range names {
+		namesChannel <- v
 	}
 	close(namesChannel)
+}
+
+func getNamesFromFile(f *os.File) []string {
+	var a []string
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		a = append(a, scanner.Text())
+	}
+	return a
 }
 
 func FetchIgnoreFiles(urlsChannel chan string, contentChannel chan string) error {
@@ -78,11 +87,20 @@ func writeContent(f *os.File, contentChannel chan string) error {
 
 func main() {
 	fetcher := ignoreFetcher{baseUrl: "https://raw.githubusercontent.com/github/gitignore/master"}
-	namesFile, _ := os.Open("names.txt")
+
+	filePointer := flag.String("file", "", "Path to file of names")
+	flag.Parse()
+	names := flag.Args()
+
+	if *filePointer != "" {
+		namesFile, _ := os.Open(*filePointer)
+		names = append(names, getNamesFromFile(namesFile)...)
+	}
+
 	namesChannel := make(chan string)
 	urlsChannel := make(chan string)
 	contentChannel := make(chan string)
-	go getNames(namesFile, namesChannel)
+	go getNames(names, namesChannel)
 	go fetcher.NamesToUrls(namesChannel, urlsChannel)
 	go FetchIgnoreFiles(urlsChannel, contentChannel)
 	f, _ := os.Create(".gitignore")
