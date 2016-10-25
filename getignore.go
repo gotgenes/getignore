@@ -24,6 +24,14 @@ func (fetcher *ignoreFetcher) NameToUrl(name string) string {
 	return fetcher.baseUrl + "/" + name + ".gitignore"
 }
 
+func getNames(f *os.File, namesChannel chan string) {
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		namesChannel <- scanner.Text()
+	}
+	close(namesChannel)
+}
+
 func FetchIgnoreFiles(urlsChannel chan string, contentChannel chan string) error {
 	var err error = nil
 	for url := range urlsChannel {
@@ -68,18 +76,13 @@ func writeContent(f *os.File, contentChannel chan string) error {
 	return err
 }
 
-func loadNames(namesChannel chan string) {
-	namesChannel <- "Go"
-	namesChannel <- "Python"
-	close(namesChannel)
-}
-
 func main() {
 	fetcher := ignoreFetcher{baseUrl: "https://raw.githubusercontent.com/github/gitignore/master"}
+	namesFile, _ := os.Open("names.txt")
 	namesChannel := make(chan string)
 	urlsChannel := make(chan string)
 	contentChannel := make(chan string)
-	go loadNames(namesChannel)
+	go getNames(namesFile, namesChannel)
 	go fetcher.NamesToUrls(namesChannel, urlsChannel)
 	go FetchIgnoreFiles(urlsChannel, contentChannel)
 	f, _ := os.Create(".gitignore")
