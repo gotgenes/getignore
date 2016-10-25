@@ -56,10 +56,10 @@ func getContent(body io.ReadCloser) (string, error) {
 	return output, err
 }
 
-func writeContent(writer bufio.Writer, contentChannel chan string) error {
+func writeContent(f *os.File, contentChannel chan string) error {
 	var err error = nil
 	for content := range contentChannel {
-		_, err := writer.WriteString(content)
+		_, err := f.WriteString(content)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "writing output:", err)
 			return err
@@ -68,5 +68,20 @@ func writeContent(writer bufio.Writer, contentChannel chan string) error {
 	return err
 }
 
+func loadNames(namesChannel chan string) {
+	namesChannel <- "Go"
+	namesChannel <- "Python"
+	close(namesChannel)
+}
+
 func main() {
+	fetcher := ignoreFetcher{baseUrl: "https://raw.githubusercontent.com/github/gitignore/master"}
+	namesChannel := make(chan string)
+	urlsChannel := make(chan string)
+	contentChannel := make(chan string)
+	go loadNames(namesChannel)
+	go fetcher.NamesToUrls(namesChannel, urlsChannel)
+	go FetchIgnoreFiles(urlsChannel, contentChannel)
+	f, _ := os.Create(".gitignore")
+	writeContent(f, contentChannel)
 }
