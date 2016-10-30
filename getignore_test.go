@@ -17,6 +17,24 @@ func TestParseNamesFile(t *testing.T) {
 	}
 }
 
+func TestParseNamesFileIgnoresBlankLines(t *testing.T) {
+	namesFile := bytes.NewBufferString("\nGlobal/Vim\nPython\n")
+	names := parseNamesFile(namesFile)
+	expectedNames := []string{"Global/Vim", "Python"}
+	if !reflect.DeepEqual(names, expectedNames) {
+		t.Errorf(error_template, names, expectedNames)
+	}
+}
+
+func TestParseNamesFileStripsSpaces(t *testing.T) {
+	namesFile := bytes.NewBufferString("Global/Vim   \n  \n   Python\n")
+	names := parseNamesFile(namesFile)
+	expectedNames := []string{"Global/Vim", "Python"}
+	if !reflect.DeepEqual(names, expectedNames) {
+		t.Errorf(error_template, names, expectedNames)
+	}
+}
+
 func TestIgnoreFetcher(t *testing.T) {
 	baseUrl := "https://github.com/github/gitignore"
 	fetcher := ignoreFetcher{baseUrl: baseUrl}

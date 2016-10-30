@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 )
 
 type ignoreFetcher struct {
@@ -48,7 +49,10 @@ func parseNamesFile(namesFile io.Reader) []string {
 	var a []string
 	scanner := bufio.NewScanner(namesFile)
 	for scanner.Scan() {
-		a = append(a, scanner.Text())
+		name := strings.TrimSpace(scanner.Text())
+		if len(name) > 0 {
+			a = append(a, name)
+		}
 	}
 	return a
 }
@@ -85,7 +89,7 @@ func getContent(body io.ReadCloser) (string, error) {
 	return output, err
 }
 
-func writeContent(f *os.File, contentChannel chan string) error {
+func writeIgnoreFile(f *os.File, contentChannel chan string) error {
 	var err error = nil
 	for content := range contentChannel {
 		_, err := f.WriteString(content)
@@ -107,5 +111,5 @@ func main() {
 	go fetcher.NamesToUrls(namesChannel, urlsChannel)
 	go FetchIgnoreFiles(urlsChannel, contentChannel)
 	f, _ := os.Create(".gitignore")
-	writeContent(f, contentChannel)
+	writeIgnoreFile(f, contentChannel)
 }
