@@ -39,14 +39,14 @@ func getNamesFromArguments() []string {
 
 	if *filePointer != "" {
 		namesFile, _ := os.Open(*filePointer)
-		names = append(names, getNamesFromFile(namesFile)...)
+		names = append(names, parseNamesFile(namesFile)...)
 	}
 	return names
 }
 
-func getNamesFromFile(f *os.File) []string {
+func parseNamesFile(namesFile io.Reader) []string {
 	var a []string
-	scanner := bufio.NewScanner(f)
+	scanner := bufio.NewScanner(namesFile)
 	for scanner.Scan() {
 		a = append(a, scanner.Text())
 	}

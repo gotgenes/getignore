@@ -1,11 +1,21 @@
 package main
 
 import (
+	"bytes"
 	"reflect"
 	"testing"
 )
 
 var error_template string = "Got %q, expected %q"
+
+func TestParseNamesFile(t *testing.T) {
+	namesFile := bytes.NewBufferString("Global/Vim\nPython\n")
+	names := parseNamesFile(namesFile)
+	expectedNames := []string{"Global/Vim", "Python"}
+	if !reflect.DeepEqual(names, expectedNames) {
+		t.Errorf(error_template, names, expectedNames)
+	}
+}
 
 func TestIgnoreFetcher(t *testing.T) {
 	baseUrl := "https://github.com/github/gitignore"
