@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 )
 
 type ignoreFetcher struct {
@@ -89,16 +90,16 @@ func getContent(body io.ReadCloser) (string, error) {
 	return output, err
 }
 
-func writeIgnoreFile(f *os.File, contentChannel chan string) error {
-	var err error = nil
+func writeIgnoreFile(ignoreFile io.Writer, contentChannel chan string, waitGroup *sync.WaitGroup) error {
+	defer waitGroup.Done()
 	for content := range contentChannel {
-		_, err := f.WriteString(content)
+		_, err := io.WriteString(ignoreFile, content)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "writing output:", err)
 			return err
 		}
 	}
-	return err
+	return nil
 }
 
 func main() {
@@ -111,5 +112,8 @@ func main() {
 	go fetcher.NamesToUrls(namesChannel, urlsChannel)
 	go FetchIgnoreFiles(urlsChannel, contentChannel)
 	f, _ := os.Create(".gitignore")
-	writeIgnoreFile(f, contentChannel)
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(1)
+	writeIgnoreFile(f, contentChannel, &waitGroup)
+	waitGroup.Wait()
 }

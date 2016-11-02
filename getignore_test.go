@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"io"
 	"reflect"
+	"sync"
 	"testing"
 )
 
@@ -82,5 +84,24 @@ func TestNameToUrl(t *testing.T) {
 	expectedUrl := "https://github.com/github/gitignore/Go.gitignore"
 	if url != expectedUrl {
 		t.Errorf(error_template, url, expectedUrl)
+	}
+}
+
+func TestWriteIgnoreFile(t *testing.T) {
+	responseContents := []string{
+		".*.swp\ntags\n",
+		"*.o\n*.exe\n",
+	}
+	contentsChannel := make(chan string)
+	go arrayToChannel(contentsChannel, responseContents)
+	ignoreFile := bytes.NewBufferString("")
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(1)
+	go writeIgnoreFile(ignoreFile, contentsChannel, &waitGroup)
+	waitGroup.Wait()
+	ignoreFileContents := ignoreFile.String()
+	expectedContents := ".*.swp\ntags\n*.o\n*.exe\n"
+	if ignoreFileContents != expectedContents {
+		t.Errorf(error_template, ignoreFileContents, expectedContents)
 	}
 }
