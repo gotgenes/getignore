@@ -12,19 +12,19 @@ import (
 )
 
 type ignoreFetcher struct {
-	baseUrl string
+	baseURL string
 }
 
 func (fetcher *ignoreFetcher) NamesToUrls(namesChannel chan string, urlsChannel chan string) {
 	for name := range namesChannel {
-		url := fetcher.NameToUrl(name)
+		url := fetcher.NameToURL(name)
 		urlsChannel <- url
 	}
 	close(urlsChannel)
 }
 
-func (fetcher *ignoreFetcher) NameToUrl(name string) string {
-	return fetcher.baseUrl + "/" + name + ".gitignore"
+func (fetcher *ignoreFetcher) NameToURL(name string) string {
+	return fetcher.baseURL + "/" + name + ".gitignore"
 }
 
 func addNamesToChannel(names []string, namesChannel chan string) {
@@ -58,8 +58,8 @@ func parseNamesFile(namesFile io.Reader) []string {
 	return a
 }
 
-func FetchIgnoreFiles(urlsChannel chan string, contentChannel chan string) error {
-	var err error = nil
+func fetchIgnoreFiles(urlsChannel chan string, contentChannel chan string) error {
+	var err error
 	for url := range urlsChannel {
 		response, err := http.Get(url)
 		if err != nil {
@@ -78,7 +78,7 @@ func FetchIgnoreFiles(urlsChannel chan string, contentChannel chan string) error
 }
 
 func getContent(body io.ReadCloser) (string, error) {
-	var err error = nil
+	var err error
 	output := ""
 	scanner := bufio.NewScanner(body)
 	for scanner.Scan() {
@@ -103,14 +103,14 @@ func writeIgnoreFile(ignoreFile io.Writer, contentChannel chan string, waitGroup
 }
 
 func main() {
-	fetcher := ignoreFetcher{baseUrl: "https://raw.githubusercontent.com/github/gitignore/master"}
+	fetcher := ignoreFetcher{baseURL: "https://raw.githubusercontent.com/github/gitignore/master"}
 	names := getNamesFromArguments()
 	namesChannel := make(chan string)
 	urlsChannel := make(chan string)
 	contentChannel := make(chan string)
 	go addNamesToChannel(names, namesChannel)
 	go fetcher.NamesToUrls(namesChannel, urlsChannel)
-	go FetchIgnoreFiles(urlsChannel, contentChannel)
+	go fetchIgnoreFiles(urlsChannel, contentChannel)
 	f, _ := os.Create(".gitignore")
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(1)

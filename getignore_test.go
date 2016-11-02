@@ -2,20 +2,19 @@ package main
 
 import (
 	"bytes"
-	"io"
 	"reflect"
 	"sync"
 	"testing"
 )
 
-var error_template string = "Got %q, expected %q"
+var errorTemplate = "Got %q, expected %q"
 
 func TestParseNamesFile(t *testing.T) {
 	namesFile := bytes.NewBufferString("Global/Vim\nPython\n")
 	names := parseNamesFile(namesFile)
 	expectedNames := []string{"Global/Vim", "Python"}
 	if !reflect.DeepEqual(names, expectedNames) {
-		t.Errorf(error_template, names, expectedNames)
+		t.Errorf(errorTemplate, names, expectedNames)
 	}
 }
 
@@ -24,7 +23,7 @@ func TestParseNamesFileIgnoresBlankLines(t *testing.T) {
 	names := parseNamesFile(namesFile)
 	expectedNames := []string{"Global/Vim", "Python"}
 	if !reflect.DeepEqual(names, expectedNames) {
-		t.Errorf(error_template, names, expectedNames)
+		t.Errorf(errorTemplate, names, expectedNames)
 	}
 }
 
@@ -33,21 +32,21 @@ func TestParseNamesFileStripsSpaces(t *testing.T) {
 	names := parseNamesFile(namesFile)
 	expectedNames := []string{"Global/Vim", "Python"}
 	if !reflect.DeepEqual(names, expectedNames) {
-		t.Errorf(error_template, names, expectedNames)
+		t.Errorf(errorTemplate, names, expectedNames)
 	}
 }
 
 func TestIgnoreFetcher(t *testing.T) {
-	baseUrl := "https://github.com/github/gitignore"
-	fetcher := ignoreFetcher{baseUrl: baseUrl}
-	gotUrl := fetcher.baseUrl
-	if gotUrl != baseUrl {
-		t.Errorf(error_template, gotUrl, baseUrl)
+	baseURL := "https://github.com/github/gitignore"
+	fetcher := ignoreFetcher{baseURL: baseURL}
+	gotURL := fetcher.baseURL
+	if gotURL != baseURL {
+		t.Errorf(errorTemplate, gotURL, baseURL)
 	}
 }
 
 func TestNamesToUrls(t *testing.T) {
-	fetcher := ignoreFetcher{baseUrl: "https://github.com/github/gitignore"}
+	fetcher := ignoreFetcher{baseURL: "https://github.com/github/gitignore"}
 	names := []string{"Go", "Python"}
 	namesChannel := make(chan string)
 	go arrayToChannel(namesChannel, names)
@@ -59,7 +58,7 @@ func TestNamesToUrls(t *testing.T) {
 		"https://github.com/github/gitignore/Python.gitignore",
 	}
 	if !reflect.DeepEqual(urls, expectedUrls) {
-		t.Errorf(error_template, urls, expectedUrls)
+		t.Errorf(errorTemplate, urls, expectedUrls)
 	}
 }
 
@@ -79,11 +78,11 @@ func channelToArray(c chan string) []string {
 }
 
 func TestNameToUrl(t *testing.T) {
-	fetcher := ignoreFetcher{baseUrl: "https://github.com/github/gitignore"}
-	url := fetcher.NameToUrl("Go")
-	expectedUrl := "https://github.com/github/gitignore/Go.gitignore"
-	if url != expectedUrl {
-		t.Errorf(error_template, url, expectedUrl)
+	fetcher := ignoreFetcher{baseURL: "https://github.com/github/gitignore"}
+	url := fetcher.NameToURL("Go")
+	expectedURL := "https://github.com/github/gitignore/Go.gitignore"
+	if url != expectedURL {
+		t.Errorf(errorTemplate, url, expectedURL)
 	}
 }
 
@@ -102,6 +101,6 @@ func TestWriteIgnoreFile(t *testing.T) {
 	ignoreFileContents := ignoreFile.String()
 	expectedContents := ".*.swp\ntags\n*.o\n*.exe\n"
 	if ignoreFileContents != expectedContents {
-		t.Errorf(error_template, ignoreFileContents, expectedContents)
+		t.Errorf(errorTemplate, ignoreFileContents, expectedContents)
 	}
 }
