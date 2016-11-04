@@ -1,0 +1,4 @@
+package: getignore
+import:
+- package: github.com/urfave/cli
+  version: ^1.18.1

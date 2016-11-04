@@ -1,16 +1,17 @@
 # getignore
 
-A small executable to concatenate .gitignore templates from [github](https://github.com/github/gitignore) into a local .gitignore file.
+A small executable to download and concatenate .gitignore templates from [github](https://github.com/github/gitignore) into a local .gitignore file.
+
 
 ## Usage
 
 Concatenate the Perl and Python templates into a .gitignore file in the current working directory
 
 ``` shell
-./getignore Perl Python
+getignore get Perl Python
 ```
 
-Read the list of templates from a file, `templates.txt`
+Read the list of names for getignore files from a file, `names.txt`
 
 ``` txt
 Ruby
@@ -19,9 +20,16 @@ Go
 ```
 
 ``` shell
-./getignore -file=templates.txt
+getignore get --names-file names.txt
 ```
 
-## Notes
 
-This command will overwrite any existing .gitignore file in the current working directory
+## Building
+
+getignore's dependencies are managed by the [Glide package manager](https://glide.sh/). First install Glide, then build getignore.
+
+``` shell
+curl https://glide.sh/get | sh
+glide install
+go build
+```

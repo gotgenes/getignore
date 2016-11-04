@@ -2,13 +2,14 @@ package main
 
 import (
 	"bufio"
-	"flag"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/urfave/cli"
 )
 
 type ignoreFetcher struct {
@@ -34,13 +35,11 @@ func addNamesToChannel(names []string, namesChannel chan string) {
 	close(namesChannel)
 }
 
-func getNamesFromArguments() []string {
-	filePointer := flag.String("file", "", "Path to file of names")
-	flag.Parse()
-	names := flag.Args()
+func getNamesFromArguments(context *cli.Context) []string {
+	names := context.Args()
 
-	if *filePointer != "" {
-		namesFile, _ := os.Open(*filePointer)
+	if context.String("names-file") != "" {
+		namesFile, _ := os.Open(context.String("names-file"))
 		names = append(names, parseNamesFile(namesFile)...)
 	}
 	return names
@@ -102,18 +101,58 @@ func writeIgnoreFile(ignoreFile io.Writer, contentChannel chan string, waitGroup
 	return nil
 }
 
-func main() {
-	fetcher := ignoreFetcher{baseURL: "https://raw.githubusercontent.com/github/gitignore/master"}
-	names := getNamesFromArguments()
+func creatCLI() *cli.App {
+	app := cli.NewApp()
+	app.Name = "getignore"
+	app.Version = "0.1.0"
+	app.Usage = "Creates gitignore files from central sources"
+
+	app.Commands = []cli.Command{
+		cli.Command{
+			Name:  "get",
+			Usage: "Fetches gitignore patterns files from a central source and concatenates them",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "base-url",
+					Usage: "The URL under which gitignore files can be found",
+					Value: "https://raw.githubusercontent.com/github/gitignore/master",
+				},
+				cli.StringFlag{
+					Name:  "names-file, n",
+					Usage: "Path to file containing names of gitignore patterns files",
+				},
+				cli.StringFlag{
+					Name:  "o",
+					Usage: "Path to output file",
+					Value: ".gitignore",
+				},
+			},
+			ArgsUsage: "[gitignore_name] [gitignore_name …]",
+			Action:    fetchAllIgnoreFiles,
+		},
+	}
+
+	return app
+}
+
+func fetchAllIgnoreFiles(context *cli.Context) error {
+	fetcher := ignoreFetcher{baseURL: context.String("base-url")}
+	names := getNamesFromArguments(context)
 	namesChannel := make(chan string)
 	urlsChannel := make(chan string)
 	contentChannel := make(chan string)
 	go addNamesToChannel(names, namesChannel)
 	go fetcher.NamesToUrls(namesChannel, urlsChannel)
 	go fetchIgnoreFiles(urlsChannel, contentChannel)
-	f, _ := os.Create(".gitignore")
+	f, _ := os.Create(context.String("o"))
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(1)
 	writeIgnoreFile(f, contentChannel, &waitGroup)
 	waitGroup.Wait()
+	return nil
+}
+
+func main() {
+	app := creatCLI()
+	app.Run(os.Args)
 }
