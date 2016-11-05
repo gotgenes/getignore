@@ -16,12 +16,12 @@ type ignoreFetcher struct {
 	baseURL string
 }
 
-func (fetcher *ignoreFetcher) NamesToUrls(namesChannel chan string, urlsChannel chan string) {
-	for name := range namesChannel {
-		url := fetcher.NameToURL(name)
-		urlsChannel <- url
+func (fetcher *ignoreFetcher) NamesToUrls(names []string) []string {
+	urls := make([]string, len(names))
+	for i, name := range names {
+		urls[i] = fetcher.NameToURL(name)
 	}
-	close(urlsChannel)
+	return urls
 }
 
 func (fetcher *ignoreFetcher) NameToURL(name string) string {
@@ -57,9 +57,9 @@ func parseNamesFile(namesFile io.Reader) []string {
 	return a
 }
 
-func fetchIgnoreFiles(urlsChannel chan string, contentChannel chan string) error {
+func fetchIgnoreFiles(urls []string, contentChannel chan string) error {
 	var err error
-	for url := range urlsChannel {
+	for _, url := range urls {
 		response, err := http.Get(url)
 		if err != nil {
 			close(contentChannel)
@@ -138,12 +138,9 @@ func creatCLI() *cli.App {
 func fetchAllIgnoreFiles(context *cli.Context) error {
 	fetcher := ignoreFetcher{baseURL: context.String("base-url")}
 	names := getNamesFromArguments(context)
-	namesChannel := make(chan string)
-	urlsChannel := make(chan string)
+	urls := fetcher.NamesToUrls(names)
 	contentChannel := make(chan string)
-	go addNamesToChannel(names, namesChannel)
-	go fetcher.NamesToUrls(namesChannel, urlsChannel)
-	go fetchIgnoreFiles(urlsChannel, contentChannel)
+	go fetchIgnoreFiles(urls, contentChannel)
 	f, _ := os.Create(context.String("o"))
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(1)

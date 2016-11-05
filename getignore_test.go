@@ -46,16 +46,12 @@ func TestIgnoreFetcher(t *testing.T) {
 }
 
 func TestNamesToUrls(t *testing.T) {
-	fetcher := ignoreFetcher{baseURL: "https://github.com/github/gitignore"}
+	fetcher := ignoreFetcher{baseURL: "https://raw.githubusercontent.com/github/gitignore/master"}
 	names := []string{"Go", "Python"}
-	namesChannel := make(chan string)
-	go arrayToChannel(namesChannel, names)
-	urlsChannel := make(chan string)
-	go fetcher.NamesToUrls(namesChannel, urlsChannel)
-	urls := channelToArray(urlsChannel)
+	urls := fetcher.NamesToUrls(names)
 	expectedUrls := []string{
-		"https://github.com/github/gitignore/Go.gitignore",
-		"https://github.com/github/gitignore/Python.gitignore",
+		"https://raw.githubusercontent.com/github/gitignore/master/Go.gitignore",
+		"https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore",
 	}
 	if !reflect.DeepEqual(urls, expectedUrls) {
 		t.Errorf(errorTemplate, urls, expectedUrls)
