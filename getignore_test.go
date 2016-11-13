@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"reflect"
-	"sync"
 	"testing"
 )
 
@@ -83,19 +82,18 @@ func TestNameToUrl(t *testing.T) {
 }
 
 func TestWriteIgnoreFile(t *testing.T) {
-	responseContents := []string{
-		".*.swp\ntags\n",
-		"*.o\n*.exe\n",
-	}
-	contentsChannel := make(chan string)
-	go arrayToChannel(contentsChannel, responseContents)
 	ignoreFile := bytes.NewBufferString("")
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(1)
-	go writeIgnoreFile(ignoreFile, contentsChannel, &waitGroup)
-	waitGroup.Wait()
+	responseContents := []NamedIgnoreContents{
+		NamedIgnoreContents{name: "Vim", contents: ".*.swp\ntags\n"},
+		NamedIgnoreContents{name: "Go", contents: "*.o\n*.exe\n"},
+	}
+	writeIgnoreFile(ignoreFile, responseContents)
 	ignoreFileContents := ignoreFile.String()
-	expectedContents := ".*.swp\ntags\n*.o\n*.exe\n"
+	expectedContents := `.*.swp
+tags
+*.o
+*.exe
+`
 	if ignoreFileContents != expectedContents {
 		t.Errorf(errorTemplate, ignoreFileContents, expectedContents)
 	}

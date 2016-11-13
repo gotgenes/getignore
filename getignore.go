@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync"
 
 	"github.com/urfave/cli"
 )
@@ -57,42 +56,70 @@ func parseNamesFile(namesFile io.Reader) []string {
 	return a
 }
 
-func fetchIgnoreFiles(urls []string, contentChannel chan string) error {
-	var err error
-	for _, url := range urls {
-		response, err := http.Get(url)
-		if err != nil {
-			close(contentChannel)
-			return err
-		}
-		content, err := getContent(response.Body)
-		if err != nil {
-			close(contentChannel)
-			return err
-		}
-		contentChannel <- content
-	}
-	close(contentChannel)
-	return err
+var MaxConnections int = 8
+
+type FetchedContents struct {
+	url      string
+	contents string
+	err      error
 }
 
-func getContent(body io.ReadCloser) (string, error) {
-	var err error
-	output := ""
+type NamedIgnoreContents struct {
+	name     string
+	contents string
+}
+
+func fetchIgnoreFiles(contentsChannel chan FetchedContents, urls []string) {
+	defer close(contentsChannel)
+	for _, url := range urls {
+		go fetchIgnoreFile(url, contentsChannel)
+	}
+}
+
+func fetchIgnoreFile(url string, contentChannel chan FetchedContents) {
+	response, err := http.Get(url)
+	if err != nil {
+		contentChannel <- FetchedContents{url, "", fmt.Errorf("Error fetching URL %s", url)}
+	}
+	defer response.Body.Close()
+	content, err := getContent(response.Body)
+	if err != nil {
+		contentChannel <- FetchedContents{url, "", fmt.Errorf("Error reading response body of %s", url)}
+	}
+	contentChannel <- FetchedContents{url, content, nil}
+}
+
+func getContent(body io.ReadCloser) (content string, err error) {
 	scanner := bufio.NewScanner(body)
 	for scanner.Scan() {
-		output = output + fmt.Sprintln(scanner.Text())
+		content = content + fmt.Sprintln(scanner.Text())
 	}
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "reading standard input:", err)
-	}
-	return output, err
+	err = scanner.Err()
+	return content, err
 }
 
-func writeIgnoreFile(ignoreFile io.Writer, contentChannel chan string, waitGroup *sync.WaitGroup) error {
-	defer waitGroup.Done()
-	for content := range contentChannel {
-		_, err := io.WriteString(ignoreFile, content)
+func processContents(contentsChannel chan FetchedContents) ([]NamedIgnoreContents, error) {
+	var retrievedContents []NamedIgnoreContents
+	var failedURLs []string
+	var err error
+	for fetchedContents := range contentsChannel {
+		if fetchedContents.err != nil {
+			failedURLs = append(failedURLs, fetchedContents.url)
+		} else {
+			retrievedContents = append(
+				retrievedContents,
+				NamedIgnoreContents{fetchedContents.url, fetchedContents.contents})
+		}
+	}
+	if len(failedURLs) > 0 {
+		err = fmt.Errorf("Failed to retrieve data from one or more URLs: %v", failedURLs)
+	}
+	return retrievedContents, err
+}
+
+func writeIgnoreFile(ignoreFile io.Writer, contents []NamedIgnoreContents) error {
+	for _, nc := range contents {
+		_, err := io.WriteString(ignoreFile, nc.contents)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "writing output:", err)
 			return err
@@ -139,14 +166,12 @@ func fetchAllIgnoreFiles(context *cli.Context) error {
 	fetcher := ignoreFetcher{baseURL: context.String("base-url")}
 	names := getNamesFromArguments(context)
 	urls := fetcher.NamesToUrls(names)
-	contentChannel := make(chan string)
-	go fetchIgnoreFiles(urls, contentChannel)
-	f, _ := os.Create(context.String("o"))
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(1)
-	writeIgnoreFile(f, contentChannel, &waitGroup)
-	waitGroup.Wait()
-	return nil
+	contentsChannel := make(chan FetchedContents, MaxConnections)
+	fetchIgnoreFiles(contentsChannel, urls)
+	contents, err := processContents(contentsChannel)
+	f, err := os.Create(context.String("o"))
+	writeIgnoreFile(f, contents)
+	return err
 }
 
 func main() {
