@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/urfave/cli"
 )
@@ -70,13 +72,17 @@ type NamedIgnoreContents struct {
 }
 
 func fetchIgnoreFiles(contentsChannel chan FetchedContents, urls []string) {
-	defer close(contentsChannel)
+	var wg sync.WaitGroup
 	for _, url := range urls {
-		go fetchIgnoreFile(url, contentsChannel)
+		wg.Add(1)
+		log.Println("Retrieving", url)
+		go fetchIgnoreFile(url, contentsChannel, &wg)
 	}
+	wg.Wait()
+	close(contentsChannel)
 }
 
-func fetchIgnoreFile(url string, contentChannel chan FetchedContents) {
+func fetchIgnoreFile(url string, contentChannel chan FetchedContents, wg *sync.WaitGroup) {
 	response, err := http.Get(url)
 	if err != nil {
 		contentChannel <- FetchedContents{url, "", fmt.Errorf("Error fetching URL %s", url)}
@@ -87,6 +93,7 @@ func fetchIgnoreFile(url string, contentChannel chan FetchedContents) {
 		contentChannel <- FetchedContents{url, "", fmt.Errorf("Error reading response body of %s", url)}
 	}
 	contentChannel <- FetchedContents{url, content, nil}
+	wg.Done()
 }
 
 func getContent(body io.ReadCloser) (content string, err error) {
@@ -169,12 +176,25 @@ func fetchAllIgnoreFiles(context *cli.Context) error {
 	contentsChannel := make(chan FetchedContents, MaxConnections)
 	fetchIgnoreFiles(contentsChannel, urls)
 	contents, err := processContents(contentsChannel)
-	f, err := os.Create(context.String("o"))
-	writeIgnoreFile(f, contents)
+	if err != nil {
+		return err
+	}
+	outputFilePath := context.String("o")
+	f, err := os.Create(outputFilePath)
+	if err != nil {
+		return err
+	}
+	log.Println("Writing contents to", outputFilePath)
+	err = writeIgnoreFile(f, contents)
+	if err != nil {
+		return err
+	}
+	log.Print("Finished")
 	return err
 }
 
 func main() {
+	log.SetFlags(0)
 	app := creatCLI()
 	app.Run(os.Args)
 }
