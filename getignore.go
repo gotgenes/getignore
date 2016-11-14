@@ -58,8 +58,6 @@ func parseNamesFile(namesFile io.Reader) []string {
 	return a
 }
 
-var MaxConnections int = 8
-
 type FetchedContents struct {
 	url      string
 	contents string
@@ -155,6 +153,11 @@ func creatCLI() *cli.App {
 					Usage: "The URL under which gitignore files can be found",
 					Value: "https://raw.githubusercontent.com/github/gitignore/master",
 				},
+				cli.IntFlag{
+					Name:  "max-connections",
+					Usage: "The number of maximum connections to open for HTTP requests",
+					Value: 8,
+				},
 				cli.StringFlag{
 					Name:  "names-file, n",
 					Usage: "Path to file containing names of gitignore patterns files",
@@ -177,8 +180,8 @@ func fetchAllIgnoreFiles(context *cli.Context) error {
 	fetcher := ignoreFetcher{baseURL: context.String("base-url")}
 	names := getNamesFromArguments(context)
 	urls := fetcher.NamesToUrls(names)
-	contentsChannel := make(chan FetchedContents, MaxConnections)
-	fetchIgnoreFiles(contentsChannel, urls)
+	contentsChannel := make(chan FetchedContents, context.Int("max-connections"))
+	go fetchIgnoreFiles(contentsChannel, urls)
 	contents, err := processContents(contentsChannel)
 	if err != nil {
 		return err
