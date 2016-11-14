@@ -82,18 +82,22 @@ func fetchIgnoreFiles(contentsChannel chan FetchedContents, urls []string) {
 	close(contentsChannel)
 }
 
-func fetchIgnoreFile(url string, contentChannel chan FetchedContents, wg *sync.WaitGroup) {
+func fetchIgnoreFile(url string, contentsChannel chan FetchedContents, wg *sync.WaitGroup) {
+	defer wg.Done()
+	var fc FetchedContents
 	response, err := http.Get(url)
-	if err != nil {
-		contentChannel <- FetchedContents{url, "", fmt.Errorf("Error fetching URL %s", url)}
+	if err != nil || response.StatusCode != 200 {
+		fc = FetchedContents{url, "", fmt.Errorf("Error fetching URL %s", url)}
+	} else {
+		defer response.Body.Close()
+		content, err := getContent(response.Body)
+		if err != nil {
+			fc = FetchedContents{url, "", fmt.Errorf("Error reading response body of %s", url)}
+		} else {
+			fc = FetchedContents{url, content, nil}
+		}
 	}
-	defer response.Body.Close()
-	content, err := getContent(response.Body)
-	if err != nil {
-		contentChannel <- FetchedContents{url, "", fmt.Errorf("Error reading response body of %s", url)}
-	}
-	contentChannel <- FetchedContents{url, content, nil}
-	wg.Done()
+	contentsChannel <- fc
 }
 
 func getContent(body io.ReadCloser) (content string, err error) {
@@ -124,7 +128,7 @@ func processContents(contentsChannel chan FetchedContents) ([]NamedIgnoreContent
 	return retrievedContents, err
 }
 
-func writeIgnoreFile(ignoreFile io.Writer, contents []NamedIgnoreContents) error {
+func writeIgnoreFile(ignoreFile io.Writer, contents []NamedIgnoreContents) (err error) {
 	for _, nc := range contents {
 		_, err := io.WriteString(ignoreFile, nc.contents)
 		if err != nil {
@@ -132,7 +136,7 @@ func writeIgnoreFile(ignoreFile io.Writer, contents []NamedIgnoreContents) error
 			return err
 		}
 	}
-	return nil
+	return
 }
 
 func creatCLI() *cli.App {
@@ -196,5 +200,5 @@ func fetchAllIgnoreFiles(context *cli.Context) error {
 func main() {
 	log.SetFlags(0)
 	app := creatCLI()
-	app.Run(os.Args)
+	app.RunAndExitOnError()
 }
