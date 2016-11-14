@@ -37,7 +37,7 @@ func TestParseNamesFileStripsSpaces(t *testing.T) {
 
 func TestIgnoreFetcher(t *testing.T) {
 	baseURL := "https://github.com/github/gitignore"
-	fetcher := ignoreFetcher{baseURL: baseURL}
+	fetcher := IgnoreFetcher{baseURL: baseURL}
 	gotURL := fetcher.baseURL
 	if gotURL != baseURL {
 		t.Errorf(errorTemplate, gotURL, baseURL)
@@ -45,15 +45,15 @@ func TestIgnoreFetcher(t *testing.T) {
 }
 
 func TestNamesToUrls(t *testing.T) {
-	fetcher := ignoreFetcher{baseURL: "https://raw.githubusercontent.com/github/gitignore/master"}
+	fetcher := IgnoreFetcher{baseURL: "https://raw.githubusercontent.com/github/gitignore/master"}
 	names := []string{"Go", "Python"}
 	urls := fetcher.NamesToUrls(names)
-	expectedUrls := []string{
-		"https://raw.githubusercontent.com/github/gitignore/master/Go.gitignore",
-		"https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore",
+	expectedURLs := []NamedURL{
+		NamedURL{"Go", "https://raw.githubusercontent.com/github/gitignore/master/Go.gitignore"},
+		NamedURL{"Python", "https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore"},
 	}
-	if !reflect.DeepEqual(urls, expectedUrls) {
-		t.Errorf(errorTemplate, urls, expectedUrls)
+	if !reflect.DeepEqual(urls, expectedURLs) {
+		t.Errorf(errorTemplate, urls, expectedURLs)
 	}
 }
 
@@ -73,11 +73,37 @@ func channelToArray(c chan string) []string {
 }
 
 func TestNameToUrl(t *testing.T) {
-	fetcher := ignoreFetcher{baseURL: "https://github.com/github/gitignore"}
+	fetcher := IgnoreFetcher{baseURL: "https://github.com/github/gitignore"}
 	url := fetcher.NameToURL("Go")
-	expectedURL := "https://github.com/github/gitignore/Go.gitignore"
+	expectedURL := NamedURL{"Go", "https://github.com/github/gitignore/Go.gitignore"}
 	if url != expectedURL {
 		t.Errorf(errorTemplate, url, expectedURL)
+	}
+}
+
+func TestFailedURLsAdd(t *testing.T) {
+	failedURLs := new(FailedURLs)
+	failedURLs.Add("https://raw.githubusercontent.com/github/gitignore/master/Bogus.gitignore")
+	failedURLs.Add("https://raw.githubusercontent.com/github/gitignore/master/Totally.gitignore")
+	expectedURLs := []string{
+		"https://raw.githubusercontent.com/github/gitignore/master/Bogus.gitignore",
+		"https://raw.githubusercontent.com/github/gitignore/master/Totally.gitignore",
+	}
+	if !reflect.DeepEqual(failedURLs.URLs, expectedURLs) {
+		t.Errorf(errorTemplate, failedURLs.URLs, expectedURLs)
+	}
+}
+
+func TestFailedURLsError(t *testing.T) {
+	failedURLs := new(FailedURLs)
+	failedURLs.Add("https://raw.githubusercontent.com/github/gitignore/master/Bogus.gitignore")
+	failedURLs.Add("https://raw.githubusercontent.com/github/gitignore/master/Totally.gitignore")
+	expectedErrorStr := `Failed to retrieve or read content from the following URLs:
+https://raw.githubusercontent.com/github/gitignore/master/Bogus.gitignore
+https://raw.githubusercontent.com/github/gitignore/master/Totally.gitignore`
+	errorStr := failedURLs.Error()
+	if errorStr != expectedErrorStr {
+		t.Errorf(errorTemplate, errorStr, expectedErrorStr)
 	}
 }
 

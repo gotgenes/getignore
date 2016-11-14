@@ -13,20 +13,26 @@ import (
 	"github.com/urfave/cli"
 )
 
-type ignoreFetcher struct {
+type IgnoreFetcher struct {
 	baseURL string
 }
 
-func (fetcher *ignoreFetcher) NamesToUrls(names []string) []string {
-	urls := make([]string, len(names))
+type NamedURL struct {
+	name string
+	url  string
+}
+
+func (fetcher *IgnoreFetcher) NamesToUrls(names []string) []NamedURL {
+	urls := make([]NamedURL, len(names))
 	for i, name := range names {
 		urls[i] = fetcher.NameToURL(name)
 	}
 	return urls
 }
 
-func (fetcher *ignoreFetcher) NameToURL(name string) string {
-	return fetcher.baseURL + "/" + name + ".gitignore"
+func (fetcher *IgnoreFetcher) NameToURL(name string) NamedURL {
+	url := fetcher.baseURL + "/" + name + ".gitignore"
+	return NamedURL{name, url}
 }
 
 func addNamesToChannel(names []string, namesChannel chan string) {
@@ -59,7 +65,7 @@ func parseNamesFile(namesFile io.Reader) []string {
 }
 
 type FetchedContents struct {
-	url      string
+	namedURL NamedURL
 	contents string
 	err      error
 }
@@ -69,30 +75,31 @@ type NamedIgnoreContents struct {
 	contents string
 }
 
-func fetchIgnoreFiles(contentsChannel chan FetchedContents, urls []string) {
+func fetchIgnoreFiles(contentsChannel chan FetchedContents, namedURLs []NamedURL) {
 	var wg sync.WaitGroup
-	for _, url := range urls {
+	for _, namedURL := range namedURLs {
 		wg.Add(1)
-		log.Println("Retrieving", url)
-		go fetchIgnoreFile(url, contentsChannel, &wg)
+		log.Println("Retrieving", namedURL.url)
+		go fetchIgnoreFile(namedURL, contentsChannel, &wg)
 	}
 	wg.Wait()
 	close(contentsChannel)
 }
 
-func fetchIgnoreFile(url string, contentsChannel chan FetchedContents, wg *sync.WaitGroup) {
+func fetchIgnoreFile(namedURL NamedURL, contentsChannel chan FetchedContents, wg *sync.WaitGroup) {
 	defer wg.Done()
 	var fc FetchedContents
+	url := namedURL.url
 	response, err := http.Get(url)
 	if err != nil || response.StatusCode != 200 {
-		fc = FetchedContents{url, "", fmt.Errorf("Error fetching URL %s", url)}
+		fc = FetchedContents{namedURL, "", fmt.Errorf("Error fetching URL %s", url)}
 	} else {
 		defer response.Body.Close()
 		content, err := getContent(response.Body)
 		if err != nil {
-			fc = FetchedContents{url, "", fmt.Errorf("Error reading response body of %s", url)}
+			fc = FetchedContents{namedURL, "", fmt.Errorf("Error reading response body of %s", url)}
 		} else {
-			fc = FetchedContents{url, content, nil}
+			fc = FetchedContents{namedURL, content, nil}
 		}
 	}
 	contentsChannel <- fc
@@ -107,21 +114,34 @@ func getContent(body io.ReadCloser) (content string, err error) {
 	return content, err
 }
 
+type FailedURLs struct {
+	URLs []string
+}
+
+func (failedURLs *FailedURLs) Add(url string) {
+	failedURLs.URLs = append(failedURLs.URLs, url)
+}
+
+func (failedURLs *FailedURLs) Error() string {
+	stringOfURLs := strings.Join(failedURLs.URLs, "\n")
+	return "Failed to retrieve or read content from the following URLs:\n" + stringOfURLs
+}
+
 func processContents(contentsChannel chan FetchedContents) ([]NamedIgnoreContents, error) {
 	var retrievedContents []NamedIgnoreContents
-	var failedURLs []string
 	var err error
+	failedURLs := new(FailedURLs)
 	for fetchedContents := range contentsChannel {
 		if fetchedContents.err != nil {
-			failedURLs = append(failedURLs, fetchedContents.url)
+			failedURLs.Add(fetchedContents.namedURL.url)
 		} else {
 			retrievedContents = append(
 				retrievedContents,
-				NamedIgnoreContents{fetchedContents.url, fetchedContents.contents})
+				NamedIgnoreContents{fetchedContents.namedURL.name, fetchedContents.contents})
 		}
 	}
-	if len(failedURLs) > 0 {
-		err = fmt.Errorf("Failed to retrieve data from one or more URLs: %v", failedURLs)
+	if len(failedURLs.URLs) > 0 {
+		err = failedURLs
 	}
 	return retrievedContents, err
 }
@@ -177,7 +197,7 @@ func creatCLI() *cli.App {
 }
 
 func fetchAllIgnoreFiles(context *cli.Context) error {
-	fetcher := ignoreFetcher{baseURL: context.String("base-url")}
+	fetcher := IgnoreFetcher{baseURL: context.String("base-url")}
 	names := getNamesFromArguments(context)
 	urls := fetcher.NamesToUrls(names)
 	contentsChannel := make(chan FetchedContents, context.Int("max-connections"))
