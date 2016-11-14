@@ -57,21 +57,6 @@ func TestNamesToUrls(t *testing.T) {
 	}
 }
 
-func arrayToChannel(c chan string, a []string) {
-	for _, v := range a {
-		c <- v
-	}
-	close(c)
-}
-
-func channelToArray(c chan string) []string {
-	var a []string
-	for v := range c {
-		a = append(a, v)
-	}
-	return a
-}
-
 func TestNameToUrl(t *testing.T) {
 	fetcher := IgnoreFetcher{baseURL: "https://github.com/github/gitignore"}
 	url := fetcher.NameToURL("Go")
