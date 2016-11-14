@@ -100,8 +100,16 @@ func TestWriteIgnoreFile(t *testing.T) {
 	}
 	writeIgnoreFile(ignoreFile, responseContents)
 	ignoreFileContents := ignoreFile.String()
-	expectedContents := `.*.swp
+	expectedContents := `#######
+# Vim #
+#######
+.*.swp
 tags
+
+
+######
+# Go #
+######
 *.o
 *.exe
 `

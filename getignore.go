@@ -147,14 +147,26 @@ func processContents(contentsChannel chan FetchedContents) ([]NamedIgnoreContent
 }
 
 func writeIgnoreFile(ignoreFile io.Writer, contents []NamedIgnoreContents) (err error) {
-	for _, nc := range contents {
-		_, err := io.WriteString(ignoreFile, nc.contents)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "writing output:", err)
-			return err
+	writer := bufio.NewWriter(ignoreFile)
+	for i, nc := range contents {
+		if i > 0 {
+			writer.WriteString("\n\n")
 		}
+		writer.WriteString(decorateName(nc.name))
+		writer.WriteString(nc.contents)
+	}
+	if writer.Flush() != nil {
+		err = writer.Flush()
 	}
 	return
+}
+
+func decorateName(name string) string {
+	nameLength := len(name)
+	fullHashLine := strings.Repeat("#", nameLength+4)
+	nameLine := fmt.Sprintf("# %s #", name)
+	decoratedName := strings.Join([]string{fullHashLine, nameLine, fullHashLine, ""}, "\n")
+	return decoratedName
 }
 
 func creatCLI() *cli.App {
