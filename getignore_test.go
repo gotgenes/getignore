@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -66,26 +67,19 @@ func TestNameToUrl(t *testing.T) {
 	}
 }
 
-func TestFailedURLsAdd(t *testing.T) {
-	failedURLs := new(FailedURLs)
-	failedURLs.Add("https://raw.githubusercontent.com/github/gitignore/master/Bogus.gitignore")
-	failedURLs.Add("https://raw.githubusercontent.com/github/gitignore/master/Totally.gitignore")
-	expectedURLs := []string{
-		"https://raw.githubusercontent.com/github/gitignore/master/Bogus.gitignore",
-		"https://raw.githubusercontent.com/github/gitignore/master/Totally.gitignore",
-	}
-	if !reflect.DeepEqual(failedURLs.URLs, expectedURLs) {
-		t.Errorf(errorTemplate, failedURLs.URLs, expectedURLs)
-	}
-}
-
 func TestFailedURLsError(t *testing.T) {
 	failedURLs := new(FailedURLs)
-	failedURLs.Add("https://raw.githubusercontent.com/github/gitignore/master/Bogus.gitignore")
-	failedURLs.Add("https://raw.githubusercontent.com/github/gitignore/master/Totally.gitignore")
-	expectedErrorStr := `Failed to retrieve or read content from the following URLs:
-https://raw.githubusercontent.com/github/gitignore/master/Bogus.gitignore
-https://raw.githubusercontent.com/github/gitignore/master/Totally.gitignore`
+	failedURLs.Add(
+		&FailedURL{
+			"https://raw.githubusercontent.com/github/gitignore/master/Bogus.gitignore",
+			fmt.Errorf("status code 404")})
+	failedURLs.Add(
+		&FailedURL{
+			"https://raw.githubusercontent.com/github/gitignore/master/Totally.gitignore",
+			fmt.Errorf("Error reading response body: too many 💩s")})
+	expectedErrorStr := `Errors for the following URLs:
+https://raw.githubusercontent.com/github/gitignore/master/Bogus.gitignore status code 404
+https://raw.githubusercontent.com/github/gitignore/master/Totally.gitignore Error reading response body: too many 💩s`
 	errorStr := failedURLs.Error()
 	if errorStr != expectedErrorStr {
 		t.Errorf(errorTemplate, errorStr, expectedErrorStr)

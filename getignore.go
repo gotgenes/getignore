@@ -86,18 +86,29 @@ func fetchIgnoreFiles(contentsChannel chan FetchedContents, namedURLs []NamedURL
 	close(contentsChannel)
 }
 
+type FailedURL struct {
+	url string
+	err error
+}
+
+func (failedURL *FailedURL) Error() string {
+	return fmt.Sprintf("%s %s", failedURL.url, failedURL.err.Error())
+}
+
 func fetchIgnoreFile(namedURL NamedURL, contentsChannel chan FetchedContents, wg *sync.WaitGroup) {
 	defer wg.Done()
 	var fc FetchedContents
 	url := namedURL.url
 	response, err := http.Get(url)
-	if err != nil || response.StatusCode != 200 {
-		fc = FetchedContents{namedURL, "", fmt.Errorf("Error fetching URL %s", url)}
+	if err != nil {
+		fc = FetchedContents{namedURL, "", err}
+	} else if response.StatusCode != 200 {
+		fc = FetchedContents{namedURL, "", fmt.Errorf("Got status code %d", response.StatusCode)}
 	} else {
 		defer response.Body.Close()
 		content, err := getContent(response.Body)
 		if err != nil {
-			fc = FetchedContents{namedURL, "", fmt.Errorf("Error reading response body of %s", url)}
+			fc = FetchedContents{namedURL, "", fmt.Errorf("Error reading response body: %s", err.Error())}
 		} else {
 			fc = FetchedContents{namedURL, content, nil}
 		}
@@ -115,16 +126,20 @@ func getContent(body io.ReadCloser) (content string, err error) {
 }
 
 type FailedURLs struct {
-	URLs []string
+	urls []*FailedURL
 }
 
-func (failedURLs *FailedURLs) Add(url string) {
-	failedURLs.URLs = append(failedURLs.URLs, url)
+func (failedURLs *FailedURLs) Add(failedURL *FailedURL) {
+	failedURLs.urls = append(failedURLs.urls, failedURL)
 }
 
 func (failedURLs *FailedURLs) Error() string {
-	stringOfURLs := strings.Join(failedURLs.URLs, "\n")
-	return "Failed to retrieve or read content from the following URLs:\n" + stringOfURLs
+	urlErrors := make([]string, len(failedURLs.urls))
+	for i, failedURL := range failedURLs.urls {
+		urlErrors[i] = failedURL.Error()
+	}
+	stringOfErrors := strings.Join(urlErrors, "\n")
+	return "Errors for the following URLs:\n" + stringOfErrors
 }
 
 func processContents(contentsChannel chan FetchedContents) ([]NamedIgnoreContents, error) {
@@ -133,14 +148,15 @@ func processContents(contentsChannel chan FetchedContents) ([]NamedIgnoreContent
 	failedURLs := new(FailedURLs)
 	for fetchedContents := range contentsChannel {
 		if fetchedContents.err != nil {
-			failedURLs.Add(fetchedContents.namedURL.url)
+			failedURL := &FailedURL{fetchedContents.namedURL.url, fetchedContents.err}
+			failedURLs.Add(failedURL)
 		} else {
 			retrievedContents = append(
 				retrievedContents,
 				NamedIgnoreContents{fetchedContents.namedURL.name, fetchedContents.contents})
 		}
 	}
-	if len(failedURLs.URLs) > 0 {
+	if len(failedURLs.urls) > 0 {
 		err = failedURLs
 	}
 	return retrievedContents, err
