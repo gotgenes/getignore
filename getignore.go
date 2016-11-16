@@ -64,6 +64,14 @@ func parseNamesFile(namesFile io.Reader) []string {
 	return a
 }
 
+func createNamesOrdering(names []string) map[string]int {
+	namesOrdering := make(map[string]int)
+	for i, name := range names {
+		namesOrdering[name] = i
+	}
+	return namesOrdering
+}
+
 type FetchedContents struct {
 	namedURL NamedURL
 	contents string
@@ -142,8 +150,8 @@ func (failedURLs *FailedURLs) Error() string {
 	return "Errors for the following URLs:\n" + stringOfErrors
 }
 
-func processContents(contentsChannel chan FetchedContents) ([]NamedIgnoreContents, error) {
-	var retrievedContents []NamedIgnoreContents
+func processContents(contentsChannel chan FetchedContents, namesOrdering map[string]int) ([]NamedIgnoreContents, error) {
+	retrievedContents := make([]NamedIgnoreContents, len(namesOrdering))
 	var err error
 	failedURLs := new(FailedURLs)
 	for fetchedContents := range contentsChannel {
@@ -151,9 +159,12 @@ func processContents(contentsChannel chan FetchedContents) ([]NamedIgnoreContent
 			failedURL := &FailedURL{fetchedContents.namedURL.url, fetchedContents.err}
 			failedURLs.Add(failedURL)
 		} else {
-			retrievedContents = append(
-				retrievedContents,
-				NamedIgnoreContents{fetchedContents.namedURL.name, fetchedContents.contents})
+			name := fetchedContents.namedURL.name
+			position, present := namesOrdering[name]
+			if !present {
+				return retrievedContents, fmt.Errorf("Could not find name %s in ordering", name)
+			}
+			retrievedContents[position] = NamedIgnoreContents{name, fetchedContents.contents}
 		}
 	}
 	if len(failedURLs.urls) > 0 {
@@ -227,10 +238,11 @@ func creatCLI() *cli.App {
 func fetchAllIgnoreFiles(context *cli.Context) error {
 	fetcher := IgnoreFetcher{baseURL: context.String("base-url")}
 	names := getNamesFromArguments(context)
+	namesOrdering := createNamesOrdering(names)
 	urls := fetcher.NamesToUrls(names)
 	contentsChannel := make(chan FetchedContents, context.Int("max-connections"))
 	go fetchIgnoreFiles(contentsChannel, urls)
-	contents, err := processContents(contentsChannel)
+	contents, err := processContents(contentsChannel, namesOrdering)
 	if err != nil {
 		return err
 	}
