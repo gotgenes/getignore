@@ -45,6 +45,23 @@ func TestIgnoreFetcher(t *testing.T) {
 	}
 }
 
+func TestNamedIgnoreContentsDisplayName(t *testing.T) {
+	nics := []NamedIgnoreContents{
+		NamedIgnoreContents{"Vim", "*.swp"},
+		NamedIgnoreContents{"Global/Vim", "*.swp"},
+		NamedIgnoreContents{"Vim.gitignore", "*.swp"},
+		NamedIgnoreContents{"Vim.patterns", "*.swp"},
+		NamedIgnoreContents{"Global/Vim.gitignore", "*.swp"},
+	}
+	expectedDisplayName := "Vim"
+	for _, nic := range nics {
+		displayName := nic.DisplayName()
+		if displayName != expectedDisplayName {
+			t.Errorf(errorTemplate, displayName, expectedDisplayName)
+		}
+	}
+}
+
 func TestNamesToUrls(t *testing.T) {
 	fetcher := IgnoreFetcher{baseURL: "https://raw.githubusercontent.com/github/gitignore/master"}
 	names := []string{"Go", "Python"}
@@ -89,8 +106,8 @@ https://raw.githubusercontent.com/github/gitignore/master/Totally.gitignore Erro
 func TestWriteIgnoreFile(t *testing.T) {
 	ignoreFile := bytes.NewBufferString("")
 	responseContents := []NamedIgnoreContents{
-		NamedIgnoreContents{name: "Vim", contents: ".*.swp\ntags\n"},
-		NamedIgnoreContents{name: "Go", contents: "*.o\n*.exe\n"},
+		NamedIgnoreContents{name: "Global/Vim", contents: ".*.swp\ntags\n"},
+		NamedIgnoreContents{name: "Go.gitignore", contents: "*.o\n*.exe\n"},
 	}
 	writeIgnoreFile(ignoreFile, responseContents)
 	ignoreFileContents := ignoreFile.String()

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -78,11 +79,6 @@ type FetchedContents struct {
 	err      error
 }
 
-type NamedIgnoreContents struct {
-	name     string
-	contents string
-}
-
 func fetchIgnoreFiles(contentsChannel chan FetchedContents, namedURLs []NamedURL) {
 	var wg sync.WaitGroup
 	for _, namedURL := range namedURLs {
@@ -150,6 +146,16 @@ func (failedURLs *FailedURLs) Error() string {
 	return "Errors for the following URLs:\n" + stringOfErrors
 }
 
+type NamedIgnoreContents struct {
+	name     string
+	contents string
+}
+
+func (nic *NamedIgnoreContents) DisplayName() string {
+	baseName := filepath.Base(nic.name)
+	return strings.TrimSuffix(baseName, filepath.Ext(baseName))
+}
+
 func processContents(contentsChannel chan FetchedContents, namesOrdering map[string]int) ([]NamedIgnoreContents, error) {
 	retrievedContents := make([]NamedIgnoreContents, len(namesOrdering))
 	var err error
@@ -179,7 +185,7 @@ func writeIgnoreFile(ignoreFile io.Writer, contents []NamedIgnoreContents) (err 
 		if i > 0 {
 			writer.WriteString("\n\n")
 		}
-		writer.WriteString(decorateName(nc.name))
+		writer.WriteString(decorateName(nc.DisplayName()))
 		writer.WriteString(nc.contents)
 	}
 	if writer.Flush() != nil {
