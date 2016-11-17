@@ -1,58 +1,130 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
 	"reflect"
 	"testing"
 )
 
-var error_template string = "Got %q, expected %q"
+var errorTemplate = "Got %q, expected %q"
+
+func TestParseNamesFile(t *testing.T) {
+	namesFile := bytes.NewBufferString("Global/Vim\nPython\n")
+	names := parseNamesFile(namesFile)
+	expectedNames := []string{"Global/Vim", "Python"}
+	if !reflect.DeepEqual(names, expectedNames) {
+		t.Errorf(errorTemplate, names, expectedNames)
+	}
+}
+
+func TestParseNamesFileIgnoresBlankLines(t *testing.T) {
+	namesFile := bytes.NewBufferString("\nGlobal/Vim\nPython\n")
+	names := parseNamesFile(namesFile)
+	expectedNames := []string{"Global/Vim", "Python"}
+	if !reflect.DeepEqual(names, expectedNames) {
+		t.Errorf(errorTemplate, names, expectedNames)
+	}
+}
+
+func TestParseNamesFileStripsSpaces(t *testing.T) {
+	namesFile := bytes.NewBufferString("Global/Vim   \n  \n   Python\n")
+	names := parseNamesFile(namesFile)
+	expectedNames := []string{"Global/Vim", "Python"}
+	if !reflect.DeepEqual(names, expectedNames) {
+		t.Errorf(errorTemplate, names, expectedNames)
+	}
+}
 
 func TestIgnoreFetcher(t *testing.T) {
-	baseUrl := "https://github.com/github/gitignore"
-	fetcher := ignoreFetcher{baseUrl: baseUrl}
-	gotUrl := fetcher.baseUrl
-	if gotUrl != baseUrl {
-		t.Errorf(error_template, gotUrl, baseUrl)
+	baseURL := "https://github.com/github/gitignore"
+	fetcher := IgnoreFetcher{baseURL: baseURL}
+	gotURL := fetcher.baseURL
+	if gotURL != baseURL {
+		t.Errorf(errorTemplate, gotURL, baseURL)
+	}
+}
+
+func TestNamedIgnoreContentsDisplayName(t *testing.T) {
+	nics := []NamedIgnoreContents{
+		NamedIgnoreContents{"Vim", "*.swp"},
+		NamedIgnoreContents{"Global/Vim", "*.swp"},
+		NamedIgnoreContents{"Vim.gitignore", "*.swp"},
+		NamedIgnoreContents{"Vim.patterns", "*.swp"},
+		NamedIgnoreContents{"Global/Vim.gitignore", "*.swp"},
+	}
+	expectedDisplayName := "Vim"
+	for _, nic := range nics {
+		displayName := nic.DisplayName()
+		if displayName != expectedDisplayName {
+			t.Errorf(errorTemplate, displayName, expectedDisplayName)
+		}
 	}
 }
 
 func TestNamesToUrls(t *testing.T) {
-	fetcher := ignoreFetcher{baseUrl: "https://github.com/github/gitignore"}
+	fetcher := IgnoreFetcher{baseURL: "https://raw.githubusercontent.com/github/gitignore/master"}
 	names := []string{"Go", "Python"}
-	namesChannel := make(chan string)
-	go arrayToChannel(namesChannel, names)
-	urlsChannel := make(chan string)
-	go fetcher.NamesToUrls(namesChannel, urlsChannel)
-	urls := channelToArray(urlsChannel)
-	expectedUrls := []string{
-		"https://github.com/github/gitignore/Go.gitignore",
-		"https://github.com/github/gitignore/Python.gitignore",
+	urls := fetcher.NamesToUrls(names)
+	expectedURLs := []NamedURL{
+		NamedURL{"Go", "https://raw.githubusercontent.com/github/gitignore/master/Go.gitignore"},
+		NamedURL{"Python", "https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore"},
 	}
-	if !reflect.DeepEqual(urls, expectedUrls) {
-		t.Errorf(error_template, urls, expectedUrls)
+	if !reflect.DeepEqual(urls, expectedURLs) {
+		t.Errorf(errorTemplate, urls, expectedURLs)
 	}
-}
-
-func arrayToChannel(c chan string, a []string) {
-	for _, v := range a {
-		c <- v
-	}
-	close(c)
-}
-
-func channelToArray(c chan string) []string {
-	var a []string
-	for v := range c {
-		a = append(a, v)
-	}
-	return a
 }
 
 func TestNameToUrl(t *testing.T) {
-	fetcher := ignoreFetcher{baseUrl: "https://github.com/github/gitignore"}
-	url := fetcher.NameToUrl("Go")
-	expectedUrl := "https://github.com/github/gitignore/Go.gitignore"
-	if url != expectedUrl {
-		t.Errorf(error_template, url, expectedUrl)
+	fetcher := IgnoreFetcher{baseURL: "https://github.com/github/gitignore"}
+	url := fetcher.NameToURL("Go")
+	expectedURL := NamedURL{"Go", "https://github.com/github/gitignore/Go.gitignore"}
+	if url != expectedURL {
+		t.Errorf(errorTemplate, url, expectedURL)
+	}
+}
+
+func TestFailedURLsError(t *testing.T) {
+	failedURLs := new(FailedURLs)
+	failedURLs.Add(
+		&FailedURL{
+			"https://raw.githubusercontent.com/github/gitignore/master/Bogus.gitignore",
+			fmt.Errorf("status code 404")})
+	failedURLs.Add(
+		&FailedURL{
+			"https://raw.githubusercontent.com/github/gitignore/master/Totally.gitignore",
+			fmt.Errorf("Error reading response body: too many 💩s")})
+	expectedErrorStr := `Errors for the following URLs:
+https://raw.githubusercontent.com/github/gitignore/master/Bogus.gitignore status code 404
+https://raw.githubusercontent.com/github/gitignore/master/Totally.gitignore Error reading response body: too many 💩s`
+	errorStr := failedURLs.Error()
+	if errorStr != expectedErrorStr {
+		t.Errorf(errorTemplate, errorStr, expectedErrorStr)
+	}
+}
+
+func TestWriteIgnoreFile(t *testing.T) {
+	ignoreFile := bytes.NewBufferString("")
+	responseContents := []NamedIgnoreContents{
+		NamedIgnoreContents{name: "Global/Vim", contents: ".*.swp\ntags\n"},
+		NamedIgnoreContents{name: "Go.gitignore", contents: "*.o\n*.exe\n"},
+	}
+	writeIgnoreFile(ignoreFile, responseContents)
+	ignoreFileContents := ignoreFile.String()
+	expectedContents := `#######
+# Vim #
+#######
+.*.swp
+tags
+
+
+######
+# Go #
+######
+*.o
+*.exe
+`
+	if ignoreFileContents != expectedContents {
+		t.Errorf(errorTemplate, ignoreFileContents, expectedContents)
 	}
 }
