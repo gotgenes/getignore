@@ -36,15 +36,6 @@ func TestParseNamesFileStripsSpaces(t *testing.T) {
 	}
 }
 
-func TestIgnoreFetcher(t *testing.T) {
-	baseURL := "https://github.com/github/gitignore"
-	fetcher := IgnoreFetcher{baseURL: baseURL}
-	gotURL := fetcher.baseURL
-	if gotURL != baseURL {
-		t.Errorf(errorTemplate, gotURL, baseURL)
-	}
-}
-
 func TestNamedIgnoreContentsDisplayName(t *testing.T) {
 	nics := []NamedIgnoreContents{
 		NamedIgnoreContents{"Vim", "*.swp"},
@@ -63,24 +54,20 @@ func TestNamedIgnoreContentsDisplayName(t *testing.T) {
 }
 
 func TestNamesToUrls(t *testing.T) {
-	fetcher := IgnoreFetcher{baseURL: "https://raw.githubusercontent.com/github/gitignore/master"}
-	names := []string{"Go", "Python"}
+	fetcher := IgnoreFetcher{
+		"https://raw.githubusercontent.com/github/gitignore/master",
+		".gitignore",
+	}
+	names := []string{"Go", "Python", "Global/Vim.gitignore", "Some.patterns"}
 	urls := fetcher.NamesToUrls(names)
 	expectedURLs := []NamedURL{
 		NamedURL{"Go", "https://raw.githubusercontent.com/github/gitignore/master/Go.gitignore"},
 		NamedURL{"Python", "https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore"},
+		NamedURL{"Global/Vim.gitignore", "https://raw.githubusercontent.com/github/gitignore/master/Global/Vim.gitignore"},
+		NamedURL{"Some.patterns", "https://raw.githubusercontent.com/github/gitignore/master/Some.patterns"},
 	}
 	if !reflect.DeepEqual(urls, expectedURLs) {
 		t.Errorf(errorTemplate, urls, expectedURLs)
-	}
-}
-
-func TestNameToUrl(t *testing.T) {
-	fetcher := IgnoreFetcher{baseURL: "https://github.com/github/gitignore"}
-	url := fetcher.NameToURL("Go")
-	expectedURL := NamedURL{"Go", "https://github.com/github/gitignore/Go.gitignore"}
-	if url != expectedURL {
-		t.Errorf(errorTemplate, url, expectedURL)
 	}
 }
 

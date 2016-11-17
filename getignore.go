@@ -15,7 +15,8 @@ import (
 )
 
 type IgnoreFetcher struct {
-	baseURL string
+	baseURL          string
+	defaultExtension string
 }
 
 type NamedURL struct {
@@ -26,14 +27,22 @@ type NamedURL struct {
 func (fetcher *IgnoreFetcher) NamesToUrls(names []string) []NamedURL {
 	urls := make([]NamedURL, len(names))
 	for i, name := range names {
-		urls[i] = fetcher.NameToURL(name)
+		urls[i] = fetcher.nameToURL(name)
 	}
 	return urls
 }
 
-func (fetcher *IgnoreFetcher) NameToURL(name string) NamedURL {
-	url := fetcher.baseURL + "/" + name + ".gitignore"
+func (fetcher *IgnoreFetcher) nameToURL(name string) NamedURL {
+	nameWithExtension := fetcher.getNameWithExtension(name)
+	url := fetcher.baseURL + "/" + nameWithExtension
 	return NamedURL{name, url}
+}
+
+func (fetcher *IgnoreFetcher) getNameWithExtension(name string) string {
+	if filepath.Ext(name) == "" {
+		name = name + fetcher.defaultExtension
+	}
+	return name
 }
 
 func addNamesToChannel(names []string, namesChannel chan string) {
@@ -214,9 +223,14 @@ func creatCLI() *cli.App {
 			Usage: "Fetches gitignore patterns files from a central source and concatenates them",
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name:  "base-url",
+					Name:  "base-url, u",
 					Usage: "The URL under which gitignore files can be found",
 					Value: "https://raw.githubusercontent.com/github/gitignore/master",
+				},
+				cli.StringFlag{
+					Name:  "default-extension, e",
+					Usage: "The default file extension appended to names when retrieving them",
+					Value: ".gitignore",
 				},
 				cli.IntFlag{
 					Name:  "max-connections",
@@ -242,7 +256,7 @@ func creatCLI() *cli.App {
 }
 
 func fetchAllIgnoreFiles(context *cli.Context) error {
-	fetcher := IgnoreFetcher{baseURL: context.String("base-url")}
+	fetcher := IgnoreFetcher{context.String("base-url"), context.String("default-extension")}
 	names := getNamesFromArguments(context)
 	namesOrdering := createNamesOrdering(names)
 	urls := fetcher.NamesToUrls(names)

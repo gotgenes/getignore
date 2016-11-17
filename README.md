@@ -27,7 +27,7 @@ getignore help get
 
 ### get
 
-Use the `get` command to obtain gitignore patterns from remote repositories. By default, it will obtain patterns from the [GitHub gitignore repository](https://github.com/github/gitignore), and write these patterns to the `.gitignore` file in the current working directory. Simply pass in the names of the ignore files you wish to retrieve (without the `.gitignore` extension).
+Use the `get` command to obtain gitignore patterns from remote repositories. By default, it will obtain patterns from the [GitHub gitignore repository](https://github.com/github/gitignore), and write these patterns to the `.gitignore` file in the current working directory. Simply pass in the names of the ignore files you wish to retrieve.
 
 For example,
 
@@ -35,7 +35,7 @@ For example,
 getignore get Go Global/Vim
 ```
 
-downloads and concatenates the Go and Vim ignore patterns and writes them into the `.gitignore` file in the current working directory.
+downloads and concatenates the Go and Vim ignore patterns and writes them into the `.gitignore` file in the current working directory. (Note the `.gitignore` extension on the names optional.)
 
 When retrieving many ignore patterns, it can be helpful instead to list names in a file, instead. Given the following file, `names.txt`
 
