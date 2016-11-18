@@ -54,12 +54,12 @@ func TestNamedIgnoreContentsDisplayName(t *testing.T) {
 }
 
 func TestNamesToUrls(t *testing.T) {
-	fetcher := IgnoreFetcher{
+	getter := HTTPIgnoreGetter{
 		"https://raw.githubusercontent.com/github/gitignore/master",
 		".gitignore",
 	}
 	names := []string{"Go", "Python", "Global/Vim.gitignore", "Some.patterns"}
-	urls := fetcher.NamesToUrls(names)
+	urls := getter.NamesToUrls(names)
 	expectedURLs := []NamedURL{
 		NamedURL{"Go", "https://raw.githubusercontent.com/github/gitignore/master/Go.gitignore"},
 		NamedURL{"Python", "https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore"},

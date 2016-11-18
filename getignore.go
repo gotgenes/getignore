@@ -14,7 +14,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-type IgnoreFetcher struct {
+type HTTPIgnoreGetter struct {
 	baseURL          string
 	defaultExtension string
 }
@@ -24,23 +24,23 @@ type NamedURL struct {
 	url  string
 }
 
-func (fetcher *IgnoreFetcher) NamesToUrls(names []string) []NamedURL {
+func (getter *HTTPIgnoreGetter) NamesToUrls(names []string) []NamedURL {
 	urls := make([]NamedURL, len(names))
 	for i, name := range names {
-		urls[i] = fetcher.nameToURL(name)
+		urls[i] = getter.nameToURL(name)
 	}
 	return urls
 }
 
-func (fetcher *IgnoreFetcher) nameToURL(name string) NamedURL {
-	nameWithExtension := fetcher.getNameWithExtension(name)
-	url := fetcher.baseURL + "/" + nameWithExtension
+func (getter *HTTPIgnoreGetter) nameToURL(name string) NamedURL {
+	nameWithExtension := getter.getNameWithExtension(name)
+	url := getter.baseURL + "/" + nameWithExtension
 	return NamedURL{name, url}
 }
 
-func (fetcher *IgnoreFetcher) getNameWithExtension(name string) string {
+func (getter *HTTPIgnoreGetter) getNameWithExtension(name string) string {
 	if filepath.Ext(name) == "" {
-		name = name + fetcher.defaultExtension
+		name = name + getter.defaultExtension
 	}
 	return name
 }
@@ -88,7 +88,7 @@ type FetchedContents struct {
 	err      error
 }
 
-func fetchIgnoreFiles(contentsChannel chan FetchedContents, namedURLs []NamedURL) {
+func getIgnoreFiles(contentsChannel chan FetchedContents, namedURLs []NamedURL) {
 	var wg sync.WaitGroup
 	for _, namedURL := range namedURLs {
 		wg.Add(1)
@@ -256,12 +256,12 @@ func creatCLI() *cli.App {
 }
 
 func fetchAllIgnoreFiles(context *cli.Context) error {
-	fetcher := IgnoreFetcher{context.String("base-url"), context.String("default-extension")}
+	getter := HTTPIgnoreGetter{context.String("base-url"), context.String("default-extension")}
 	names := getNamesFromArguments(context)
 	namesOrdering := createNamesOrdering(names)
-	urls := fetcher.NamesToUrls(names)
+	urls := getter.NamesToUrls(names)
 	contentsChannel := make(chan FetchedContents, context.Int("max-connections"))
-	go fetchIgnoreFiles(contentsChannel, urls)
+	go getIgnoreFiles(contentsChannel, urls)
 	contents, err := processContents(contentsChannel, namesOrdering)
 	if err != nil {
 		return err
