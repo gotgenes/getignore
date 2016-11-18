@@ -19,12 +19,13 @@ func getNamesFromArguments(context *cli.Context) []string {
 
 	if context.String("names-file") != "" {
 		namesFile, _ := os.Open(context.String("names-file"))
-		names = append(names, parseNamesFile(namesFile)...)
+		names = append(names, ParseNamesFile(namesFile)...)
 	}
 	return names
 }
 
-func parseNamesFile(namesFile io.Reader) []string {
+// ParseNamesFile reads a file containing one name of a gitignore patterns file per line
+func ParseNamesFile(namesFile io.Reader) []string {
 	var a []string
 	scanner := bufio.NewScanner(namesFile)
 	for scanner.Scan() {
@@ -36,7 +37,8 @@ func parseNamesFile(namesFile io.Reader) []string {
 	return a
 }
 
-func createNamesOrdering(names []string) map[string]int {
+// CreateNamesOrdering creates a mapping of each name to its respective input position
+func CreateNamesOrdering(names []string) map[string]int {
 	namesOrdering := make(map[string]int)
 	for i, name := range names {
 		namesOrdering[name] = i
@@ -44,22 +46,30 @@ func createNamesOrdering(names []string) map[string]int {
 	return namesOrdering
 }
 
+// HTTPIgnoreGetter provides an implementation to retrieve gitignore patterns from
+// files available over HTTP
 type HTTPIgnoreGetter struct {
 	baseURL          string
 	defaultExtension string
 }
 
+// RetrievedContents represents the result of retrieving contents of a gitignore patterns
+// file
 type RetrievedContents struct {
 	namedSource NamedSource
 	contents    string
 	err         error
 }
 
+// NamedSource represents a source containing gitignore patterns, along with a given name
 type NamedSource struct {
 	name   string
 	source string
 }
 
+// GetIgnoreFiles retrieves gitignore patterns files via HTTP and sends their contents
+// over a channel. It registers each request made with a WaitGroup instance, so the
+// responses can be awaited.
 func (getter *HTTPIgnoreGetter) GetIgnoreFiles(names []string, contentsChannel chan RetrievedContents, requestsPending *sync.WaitGroup) {
 	namedURLs := getter.NamesToUrls(names)
 	for _, namedURL := range namedURLs {
@@ -69,6 +79,7 @@ func (getter *HTTPIgnoreGetter) GetIgnoreFiles(names []string, contentsChannel c
 	}
 }
 
+// NamesToUrls converts names of gitignore files to URLs
 func (getter *HTTPIgnoreGetter) NamesToUrls(names []string) []NamedSource {
 	urls := make([]NamedSource, len(names))
 	for i, name := range names {
@@ -90,6 +101,7 @@ func (getter *HTTPIgnoreGetter) getNameWithExtension(name string) string {
 	return name
 }
 
+// FailedSource represents a source unable to be retrieved or processed
 type FailedSource struct {
 	source string
 	err    error
@@ -129,10 +141,12 @@ func getContent(body io.ReadCloser) (content string, err error) {
 	return content, err
 }
 
+// FailedSources represents a collection of FailedSource instances
 type FailedSources struct {
 	sources []*FailedSource
 }
 
+// Add adds a FailedSource instance to the FailedSources collection
 func (failedSources *FailedSources) Add(failedSource *FailedSource) {
 	failedSources.sources = append(failedSources.sources, failedSource)
 }
@@ -146,11 +160,15 @@ func (failedSources *FailedSources) Error() string {
 	return "Errors for the following URLs:\n" + stringOfErrors
 }
 
+// NamedIgnoreContents represents the contents (patterns and comments) of a
+// gitignore file
 type NamedIgnoreContents struct {
 	name     string
 	contents string
 }
 
+// DisplayName returns the decorated name, suitable for a section header in a
+// gitignore file
 func (nic *NamedIgnoreContents) DisplayName() string {
 	baseName := filepath.Base(nic.name)
 	return strings.TrimSuffix(baseName, filepath.Ext(baseName))
@@ -248,7 +266,7 @@ func creatCLI() *cli.App {
 
 func fetchAllIgnoreFiles(context *cli.Context) error {
 	names := getNamesFromArguments(context)
-	namesOrdering := createNamesOrdering(names)
+	namesOrdering := CreateNamesOrdering(names)
 	getter := HTTPIgnoreGetter{context.String("base-url"), context.String("default-extension")}
 	contentsChannel := make(chan RetrievedContents, context.Int("max-connections"))
 	var requestsPending sync.WaitGroup

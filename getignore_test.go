@@ -11,7 +11,7 @@ var errorTemplate = "Got %q, expected %q"
 
 func TestParseNamesFile(t *testing.T) {
 	namesFile := bytes.NewBufferString("Global/Vim\nPython\n")
-	names := parseNamesFile(namesFile)
+	names := ParseNamesFile(namesFile)
 	expectedNames := []string{"Global/Vim", "Python"}
 	if !reflect.DeepEqual(names, expectedNames) {
 		t.Errorf(errorTemplate, names, expectedNames)
@@ -20,7 +20,7 @@ func TestParseNamesFile(t *testing.T) {
 
 func TestParseNamesFileIgnoresBlankLines(t *testing.T) {
 	namesFile := bytes.NewBufferString("\nGlobal/Vim\nPython\n")
-	names := parseNamesFile(namesFile)
+	names := ParseNamesFile(namesFile)
 	expectedNames := []string{"Global/Vim", "Python"}
 	if !reflect.DeepEqual(names, expectedNames) {
 		t.Errorf(errorTemplate, names, expectedNames)
@@ -29,7 +29,7 @@ func TestParseNamesFileIgnoresBlankLines(t *testing.T) {
 
 func TestParseNamesFileStripsSpaces(t *testing.T) {
 	namesFile := bytes.NewBufferString("Global/Vim   \n  \n   Python\n")
-	names := parseNamesFile(namesFile)
+	names := ParseNamesFile(namesFile)
 	expectedNames := []string{"Global/Vim", "Python"}
 	if !reflect.DeepEqual(names, expectedNames) {
 		t.Errorf(errorTemplate, names, expectedNames)
