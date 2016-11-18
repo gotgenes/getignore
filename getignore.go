@@ -49,7 +49,7 @@ type HTTPIgnoreGetter struct {
 	defaultExtension string
 }
 
-type FetchedContents struct {
+type RetrievedContents struct {
 	namedURL NamedURL
 	contents string
 	err      error
@@ -60,7 +60,7 @@ type NamedURL struct {
 	url  string
 }
 
-func (getter *HTTPIgnoreGetter) GetIgnoreFiles(names []string, contentsChannel chan FetchedContents, requestsPending *sync.WaitGroup) {
+func (getter *HTTPIgnoreGetter) GetIgnoreFiles(names []string, contentsChannel chan RetrievedContents, requestsPending *sync.WaitGroup) {
 	namedURLs := getter.NamesToUrls(names)
 	for _, namedURL := range namedURLs {
 		requestsPending.Add(1)
@@ -99,22 +99,22 @@ func (failedURL *FailedURL) Error() string {
 	return fmt.Sprintf("%s %s", failedURL.url, failedURL.err.Error())
 }
 
-func fetchIgnoreFile(namedURL NamedURL, contentsChannel chan FetchedContents, requestsPending *sync.WaitGroup) {
+func fetchIgnoreFile(namedURL NamedURL, contentsChannel chan RetrievedContents, requestsPending *sync.WaitGroup) {
 	defer requestsPending.Done()
-	var fc FetchedContents
+	var fc RetrievedContents
 	url := namedURL.url
 	response, err := http.Get(url)
 	if err != nil {
-		fc = FetchedContents{namedURL, "", err}
+		fc = RetrievedContents{namedURL, "", err}
 	} else if response.StatusCode != 200 {
-		fc = FetchedContents{namedURL, "", fmt.Errorf("Got status code %d", response.StatusCode)}
+		fc = RetrievedContents{namedURL, "", fmt.Errorf("Got status code %d", response.StatusCode)}
 	} else {
 		defer response.Body.Close()
 		content, err := getContent(response.Body)
 		if err != nil {
-			fc = FetchedContents{namedURL, "", fmt.Errorf("Error reading response body: %s", err.Error())}
+			fc = RetrievedContents{namedURL, "", fmt.Errorf("Error reading response body: %s", err.Error())}
 		} else {
-			fc = FetchedContents{namedURL, content, nil}
+			fc = RetrievedContents{namedURL, content, nil}
 		}
 	}
 	contentsChannel <- fc
@@ -156,7 +156,7 @@ func (nic *NamedIgnoreContents) DisplayName() string {
 	return strings.TrimSuffix(baseName, filepath.Ext(baseName))
 }
 
-func processContents(contentsChannel chan FetchedContents, namesOrdering map[string]int) ([]NamedIgnoreContents, error) {
+func processContents(contentsChannel chan RetrievedContents, namesOrdering map[string]int) ([]NamedIgnoreContents, error) {
 	retrievedContents := make([]NamedIgnoreContents, len(namesOrdering))
 	var err error
 	failedURLs := new(FailedURLs)
@@ -250,7 +250,7 @@ func fetchAllIgnoreFiles(context *cli.Context) error {
 	names := getNamesFromArguments(context)
 	namesOrdering := createNamesOrdering(names)
 	getter := HTTPIgnoreGetter{context.String("base-url"), context.String("default-extension")}
-	contentsChannel := make(chan FetchedContents, context.Int("max-connections"))
+	contentsChannel := make(chan RetrievedContents, context.Int("max-connections"))
 	var requestsPending sync.WaitGroup
 	getter.GetIgnoreFiles(names, contentsChannel, &requestsPending)
 	requestsPending.Wait()
