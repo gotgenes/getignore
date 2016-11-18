@@ -2,6 +2,7 @@
 
 A small executable to download and concatenate [.gitignore templates from GitHub](https://github.com/github/gitignore) into a local .gitignore file.
 
+[![Travis CI Build Status](https://travis-ci.org/gotgenes/getignore.svg?branch=master)](https://travis-ci.org/gotgenes/getignore)
 
 ## Usage
 
