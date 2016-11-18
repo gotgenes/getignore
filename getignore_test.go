@@ -60,11 +60,11 @@ func TestNamesToUrls(t *testing.T) {
 	}
 	names := []string{"Go", "Python", "Global/Vim.gitignore", "Some.patterns"}
 	urls := getter.NamesToUrls(names)
-	expectedURLs := []NamedURL{
-		NamedURL{"Go", "https://raw.githubusercontent.com/github/gitignore/master/Go.gitignore"},
-		NamedURL{"Python", "https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore"},
-		NamedURL{"Global/Vim.gitignore", "https://raw.githubusercontent.com/github/gitignore/master/Global/Vim.gitignore"},
-		NamedURL{"Some.patterns", "https://raw.githubusercontent.com/github/gitignore/master/Some.patterns"},
+	expectedURLs := []NamedSource{
+		NamedSource{"Go", "https://raw.githubusercontent.com/github/gitignore/master/Go.gitignore"},
+		NamedSource{"Python", "https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore"},
+		NamedSource{"Global/Vim.gitignore", "https://raw.githubusercontent.com/github/gitignore/master/Global/Vim.gitignore"},
+		NamedSource{"Some.patterns", "https://raw.githubusercontent.com/github/gitignore/master/Some.patterns"},
 	}
 	if !reflect.DeepEqual(urls, expectedURLs) {
 		t.Errorf(errorTemplate, urls, expectedURLs)
@@ -72,13 +72,13 @@ func TestNamesToUrls(t *testing.T) {
 }
 
 func TestFailedURLsError(t *testing.T) {
-	failedURLs := new(FailedURLs)
+	failedURLs := new(FailedSources)
 	failedURLs.Add(
-		&FailedURL{
+		&FailedSource{
 			"https://raw.githubusercontent.com/github/gitignore/master/Bogus.gitignore",
 			fmt.Errorf("status code 404")})
 	failedURLs.Add(
-		&FailedURL{
+		&FailedSource{
 			"https://raw.githubusercontent.com/github/gitignore/master/Totally.gitignore",
 			fmt.Errorf("Error reading response body: too many 💩s")})
 	expectedErrorStr := `Errors for the following URLs:

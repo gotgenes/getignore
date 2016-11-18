@@ -50,37 +50,37 @@ type HTTPIgnoreGetter struct {
 }
 
 type RetrievedContents struct {
-	namedURL NamedURL
-	contents string
-	err      error
+	namedSource NamedSource
+	contents    string
+	err         error
 }
 
-type NamedURL struct {
-	name string
-	url  string
+type NamedSource struct {
+	name   string
+	source string
 }
 
 func (getter *HTTPIgnoreGetter) GetIgnoreFiles(names []string, contentsChannel chan RetrievedContents, requestsPending *sync.WaitGroup) {
 	namedURLs := getter.NamesToUrls(names)
 	for _, namedURL := range namedURLs {
 		requestsPending.Add(1)
-		log.Println("Retrieving", namedURL.url)
+		log.Println("Retrieving", namedURL.source)
 		go fetchIgnoreFile(namedURL, contentsChannel, requestsPending)
 	}
 }
 
-func (getter *HTTPIgnoreGetter) NamesToUrls(names []string) []NamedURL {
-	urls := make([]NamedURL, len(names))
+func (getter *HTTPIgnoreGetter) NamesToUrls(names []string) []NamedSource {
+	urls := make([]NamedSource, len(names))
 	for i, name := range names {
 		urls[i] = getter.nameToURL(name)
 	}
 	return urls
 }
 
-func (getter *HTTPIgnoreGetter) nameToURL(name string) NamedURL {
+func (getter *HTTPIgnoreGetter) nameToURL(name string) NamedSource {
 	nameWithExtension := getter.getNameWithExtension(name)
 	url := getter.baseURL + "/" + nameWithExtension
-	return NamedURL{name, url}
+	return NamedSource{name, url}
 }
 
 func (getter *HTTPIgnoreGetter) getNameWithExtension(name string) string {
@@ -90,19 +90,19 @@ func (getter *HTTPIgnoreGetter) getNameWithExtension(name string) string {
 	return name
 }
 
-type FailedURL struct {
-	url string
-	err error
+type FailedSource struct {
+	source string
+	err    error
 }
 
-func (failedURL *FailedURL) Error() string {
-	return fmt.Sprintf("%s %s", failedURL.url, failedURL.err.Error())
+func (fs *FailedSource) Error() string {
+	return fmt.Sprintf("%s %s", fs.source, fs.err.Error())
 }
 
-func fetchIgnoreFile(namedURL NamedURL, contentsChannel chan RetrievedContents, requestsPending *sync.WaitGroup) {
+func fetchIgnoreFile(namedURL NamedSource, contentsChannel chan RetrievedContents, requestsPending *sync.WaitGroup) {
 	defer requestsPending.Done()
 	var fc RetrievedContents
-	url := namedURL.url
+	url := namedURL.source
 	response, err := http.Get(url)
 	if err != nil {
 		fc = RetrievedContents{namedURL, "", err}
@@ -129,20 +129,20 @@ func getContent(body io.ReadCloser) (content string, err error) {
 	return content, err
 }
 
-type FailedURLs struct {
-	urls []*FailedURL
+type FailedSources struct {
+	sources []*FailedSource
 }
 
-func (failedURLs *FailedURLs) Add(failedURL *FailedURL) {
-	failedURLs.urls = append(failedURLs.urls, failedURL)
+func (failedSources *FailedSources) Add(failedSource *FailedSource) {
+	failedSources.sources = append(failedSources.sources, failedSource)
 }
 
-func (failedURLs *FailedURLs) Error() string {
-	urlErrors := make([]string, len(failedURLs.urls))
-	for i, failedURL := range failedURLs.urls {
-		urlErrors[i] = failedURL.Error()
+func (failedSources *FailedSources) Error() string {
+	sourceErrors := make([]string, len(failedSources.sources))
+	for i, failedSource := range failedSources.sources {
+		sourceErrors[i] = failedSource.Error()
 	}
-	stringOfErrors := strings.Join(urlErrors, "\n")
+	stringOfErrors := strings.Join(sourceErrors, "\n")
 	return "Errors for the following URLs:\n" + stringOfErrors
 }
 
@@ -157,26 +157,26 @@ func (nic *NamedIgnoreContents) DisplayName() string {
 }
 
 func processContents(contentsChannel chan RetrievedContents, namesOrdering map[string]int) ([]NamedIgnoreContents, error) {
-	retrievedContents := make([]NamedIgnoreContents, len(namesOrdering))
+	allRetrievedContents := make([]NamedIgnoreContents, len(namesOrdering))
 	var err error
-	failedURLs := new(FailedURLs)
-	for fetchedContents := range contentsChannel {
-		if fetchedContents.err != nil {
-			failedURL := &FailedURL{fetchedContents.namedURL.url, fetchedContents.err}
-			failedURLs.Add(failedURL)
+	failedSources := new(FailedSources)
+	for retrievedContents := range contentsChannel {
+		if retrievedContents.err != nil {
+			failedSource := &FailedSource{retrievedContents.namedSource.source, retrievedContents.err}
+			failedSources.Add(failedSource)
 		} else {
-			name := fetchedContents.namedURL.name
+			name := retrievedContents.namedSource.name
 			position, present := namesOrdering[name]
 			if !present {
-				return retrievedContents, fmt.Errorf("Could not find name %s in ordering", name)
+				return allRetrievedContents, fmt.Errorf("Could not find name %s in ordering", name)
 			}
-			retrievedContents[position] = NamedIgnoreContents{name, fetchedContents.contents}
+			allRetrievedContents[position] = NamedIgnoreContents{name, retrievedContents.contents}
 		}
 	}
-	if len(failedURLs.urls) > 0 {
-		err = failedURLs
+	if len(failedSources.sources) > 0 {
+		err = failedSources
 	}
-	return retrievedContents, err
+	return allRetrievedContents, err
 }
 
 func writeIgnoreFile(ignoreFile io.Writer, contents []NamedIgnoreContents) (err error) {
