@@ -32,10 +32,19 @@ Use the `get` command to obtain gitignore patterns from remote repositories. By 
 For example,
 
 ```shell
+getignore get Go.gitignore Global/Vim.gitignore
+```
+
+downloads and concatenates the Go and Vim ignore patterns and writes them into the `.gitignore` file in the current working directory (`./.gitignore`).
+
+Note the `.gitignore` extension on the names optional. Feel free to omit the extension; the previous example could be issued more simply as
+
+```shell
 getignore get Go Global/Vim
 ```
 
-downloads and concatenates the Go and Vim ignore patterns and writes them into the `.gitignore` file in the current working directory. (Note the `.gitignore` extension on the names optional.)
+so long as they share a common extension. (See also the `--default-extension` option.)
+
 
 When retrieving many ignore patterns, it can be helpful instead to list names in a file, instead. Given the following file, `names.txt`
 
