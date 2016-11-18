@@ -14,44 +14,6 @@ import (
 	"github.com/urfave/cli"
 )
 
-type HTTPIgnoreGetter struct {
-	baseURL          string
-	defaultExtension string
-}
-
-type NamedURL struct {
-	name string
-	url  string
-}
-
-func (getter *HTTPIgnoreGetter) NamesToUrls(names []string) []NamedURL {
-	urls := make([]NamedURL, len(names))
-	for i, name := range names {
-		urls[i] = getter.nameToURL(name)
-	}
-	return urls
-}
-
-func (getter *HTTPIgnoreGetter) nameToURL(name string) NamedURL {
-	nameWithExtension := getter.getNameWithExtension(name)
-	url := getter.baseURL + "/" + nameWithExtension
-	return NamedURL{name, url}
-}
-
-func (getter *HTTPIgnoreGetter) getNameWithExtension(name string) string {
-	if filepath.Ext(name) == "" {
-		name = name + getter.defaultExtension
-	}
-	return name
-}
-
-func addNamesToChannel(names []string, namesChannel chan string) {
-	for _, v := range names {
-		namesChannel <- v
-	}
-	close(namesChannel)
-}
-
 func getNamesFromArguments(context *cli.Context) []string {
 	names := context.Args()
 
@@ -82,21 +44,50 @@ func createNamesOrdering(names []string) map[string]int {
 	return namesOrdering
 }
 
+type HTTPIgnoreGetter struct {
+	baseURL          string
+	defaultExtension string
+}
+
 type FetchedContents struct {
 	namedURL NamedURL
 	contents string
 	err      error
 }
 
-func getIgnoreFiles(contentsChannel chan FetchedContents, namedURLs []NamedURL) {
-	var wg sync.WaitGroup
+type NamedURL struct {
+	name string
+	url  string
+}
+
+func (getter *HTTPIgnoreGetter) GetIgnoreFiles(names []string, contentsChannel chan FetchedContents, requestsPending *sync.WaitGroup) {
+	namedURLs := getter.NamesToUrls(names)
 	for _, namedURL := range namedURLs {
-		wg.Add(1)
+		requestsPending.Add(1)
 		log.Println("Retrieving", namedURL.url)
-		go fetchIgnoreFile(namedURL, contentsChannel, &wg)
+		go fetchIgnoreFile(namedURL, contentsChannel, requestsPending)
 	}
-	wg.Wait()
-	close(contentsChannel)
+}
+
+func (getter *HTTPIgnoreGetter) NamesToUrls(names []string) []NamedURL {
+	urls := make([]NamedURL, len(names))
+	for i, name := range names {
+		urls[i] = getter.nameToURL(name)
+	}
+	return urls
+}
+
+func (getter *HTTPIgnoreGetter) nameToURL(name string) NamedURL {
+	nameWithExtension := getter.getNameWithExtension(name)
+	url := getter.baseURL + "/" + nameWithExtension
+	return NamedURL{name, url}
+}
+
+func (getter *HTTPIgnoreGetter) getNameWithExtension(name string) string {
+	if filepath.Ext(name) == "" {
+		name = name + getter.defaultExtension
+	}
+	return name
 }
 
 type FailedURL struct {
@@ -108,8 +99,8 @@ func (failedURL *FailedURL) Error() string {
 	return fmt.Sprintf("%s %s", failedURL.url, failedURL.err.Error())
 }
 
-func fetchIgnoreFile(namedURL NamedURL, contentsChannel chan FetchedContents, wg *sync.WaitGroup) {
-	defer wg.Done()
+func fetchIgnoreFile(namedURL NamedURL, contentsChannel chan FetchedContents, requestsPending *sync.WaitGroup) {
+	defer requestsPending.Done()
 	var fc FetchedContents
 	url := namedURL.url
 	response, err := http.Get(url)
@@ -256,12 +247,14 @@ func creatCLI() *cli.App {
 }
 
 func fetchAllIgnoreFiles(context *cli.Context) error {
-	getter := HTTPIgnoreGetter{context.String("base-url"), context.String("default-extension")}
 	names := getNamesFromArguments(context)
 	namesOrdering := createNamesOrdering(names)
-	urls := getter.NamesToUrls(names)
+	getter := HTTPIgnoreGetter{context.String("base-url"), context.String("default-extension")}
 	contentsChannel := make(chan FetchedContents, context.Int("max-connections"))
-	go getIgnoreFiles(contentsChannel, urls)
+	var requestsPending sync.WaitGroup
+	getter.GetIgnoreFiles(names, contentsChannel, &requestsPending)
+	requestsPending.Wait()
+	close(contentsChannel)
 	contents, err := processContents(contentsChannel, namesOrdering)
 	if err != nil {
 		return err
