@@ -1,8 +1,31 @@
 # getignore
 
-A small executable to download and concatenate [.gitignore templates from GitHub](https://github.com/github/gitignore) into a local .gitignore file.
+getignore bootstraps `.gitignore` files from [GitHub .gitignore templates](https://github.com/github/gitignore).
 
 [![Travis CI Build Status](https://travis-ci.org/gotgenes/getignore.svg?branch=master)](https://travis-ci.org/gotgenes/getignore)
+
+
+## Installation
+
+### Homebrew users (OS X)
+
+[Homebrew](http://brew.sh) users can install getignore using the following commands:
+
+```shell
+brew tap gotgenes/homebrew-gotgenes
+brew update
+brew install getignore
+```
+
+### Windows, Linux, and OS X
+
+Download and unpack a pre-compiled executable from [the releases page](https://github.com/gotgenes/getignore/releases). Make sure to place the executable in your shell's `PATH`.
+
+
+### Other platforms
+
+See [the Building section, below](#buiding).
+
 
 ## Usage
 
