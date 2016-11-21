@@ -11,7 +11,7 @@ var errorTemplate = "Got %q, expected %q"
 
 func TestParseNamesFile(t *testing.T) {
 	namesFile := bytes.NewBufferString("Global/Vim\nPython\n")
-	names := parseNamesFile(namesFile)
+	names := ParseNamesFile(namesFile)
 	expectedNames := []string{"Global/Vim", "Python"}
 	if !reflect.DeepEqual(names, expectedNames) {
 		t.Errorf(errorTemplate, names, expectedNames)
@@ -20,7 +20,7 @@ func TestParseNamesFile(t *testing.T) {
 
 func TestParseNamesFileIgnoresBlankLines(t *testing.T) {
 	namesFile := bytes.NewBufferString("\nGlobal/Vim\nPython\n")
-	names := parseNamesFile(namesFile)
+	names := ParseNamesFile(namesFile)
 	expectedNames := []string{"Global/Vim", "Python"}
 	if !reflect.DeepEqual(names, expectedNames) {
 		t.Errorf(errorTemplate, names, expectedNames)
@@ -29,19 +29,10 @@ func TestParseNamesFileIgnoresBlankLines(t *testing.T) {
 
 func TestParseNamesFileStripsSpaces(t *testing.T) {
 	namesFile := bytes.NewBufferString("Global/Vim   \n  \n   Python\n")
-	names := parseNamesFile(namesFile)
+	names := ParseNamesFile(namesFile)
 	expectedNames := []string{"Global/Vim", "Python"}
 	if !reflect.DeepEqual(names, expectedNames) {
 		t.Errorf(errorTemplate, names, expectedNames)
-	}
-}
-
-func TestIgnoreFetcher(t *testing.T) {
-	baseURL := "https://github.com/github/gitignore"
-	fetcher := IgnoreFetcher{baseURL: baseURL}
-	gotURL := fetcher.baseURL
-	if gotURL != baseURL {
-		t.Errorf(errorTemplate, gotURL, baseURL)
 	}
 }
 
@@ -63,35 +54,31 @@ func TestNamedIgnoreContentsDisplayName(t *testing.T) {
 }
 
 func TestNamesToUrls(t *testing.T) {
-	fetcher := IgnoreFetcher{baseURL: "https://raw.githubusercontent.com/github/gitignore/master"}
-	names := []string{"Go", "Python"}
-	urls := fetcher.NamesToUrls(names)
-	expectedURLs := []NamedURL{
-		NamedURL{"Go", "https://raw.githubusercontent.com/github/gitignore/master/Go.gitignore"},
-		NamedURL{"Python", "https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore"},
+	getter := HTTPIgnoreGetter{
+		"https://raw.githubusercontent.com/github/gitignore/master",
+		".gitignore",
+	}
+	names := []string{"Go", "Python", "Global/Vim.gitignore", "Some.patterns"}
+	urls := getter.NamesToUrls(names)
+	expectedURLs := []NamedSource{
+		NamedSource{"Go", "https://raw.githubusercontent.com/github/gitignore/master/Go.gitignore"},
+		NamedSource{"Python", "https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore"},
+		NamedSource{"Global/Vim.gitignore", "https://raw.githubusercontent.com/github/gitignore/master/Global/Vim.gitignore"},
+		NamedSource{"Some.patterns", "https://raw.githubusercontent.com/github/gitignore/master/Some.patterns"},
 	}
 	if !reflect.DeepEqual(urls, expectedURLs) {
 		t.Errorf(errorTemplate, urls, expectedURLs)
 	}
 }
 
-func TestNameToUrl(t *testing.T) {
-	fetcher := IgnoreFetcher{baseURL: "https://github.com/github/gitignore"}
-	url := fetcher.NameToURL("Go")
-	expectedURL := NamedURL{"Go", "https://github.com/github/gitignore/Go.gitignore"}
-	if url != expectedURL {
-		t.Errorf(errorTemplate, url, expectedURL)
-	}
-}
-
 func TestFailedURLsError(t *testing.T) {
-	failedURLs := new(FailedURLs)
+	failedURLs := new(FailedSources)
 	failedURLs.Add(
-		&FailedURL{
+		&FailedSource{
 			"https://raw.githubusercontent.com/github/gitignore/master/Bogus.gitignore",
 			fmt.Errorf("status code 404")})
 	failedURLs.Add(
-		&FailedURL{
+		&FailedSource{
 			"https://raw.githubusercontent.com/github/gitignore/master/Totally.gitignore",
 			fmt.Errorf("Error reading response body: too many 💩s")})
 	expectedErrorStr := `Errors for the following URLs:

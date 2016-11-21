@@ -14,46 +14,18 @@ import (
 	"github.com/urfave/cli"
 )
 
-type IgnoreFetcher struct {
-	baseURL string
-}
-
-type NamedURL struct {
-	name string
-	url  string
-}
-
-func (fetcher *IgnoreFetcher) NamesToUrls(names []string) []NamedURL {
-	urls := make([]NamedURL, len(names))
-	for i, name := range names {
-		urls[i] = fetcher.NameToURL(name)
-	}
-	return urls
-}
-
-func (fetcher *IgnoreFetcher) NameToURL(name string) NamedURL {
-	url := fetcher.baseURL + "/" + name + ".gitignore"
-	return NamedURL{name, url}
-}
-
-func addNamesToChannel(names []string, namesChannel chan string) {
-	for _, v := range names {
-		namesChannel <- v
-	}
-	close(namesChannel)
-}
-
 func getNamesFromArguments(context *cli.Context) []string {
 	names := context.Args()
 
 	if context.String("names-file") != "" {
 		namesFile, _ := os.Open(context.String("names-file"))
-		names = append(names, parseNamesFile(namesFile)...)
+		names = append(names, ParseNamesFile(namesFile)...)
 	}
 	return names
 }
 
-func parseNamesFile(namesFile io.Reader) []string {
+// ParseNamesFile reads a file containing one name of a gitignore patterns file per line
+func ParseNamesFile(namesFile io.Reader) []string {
 	var a []string
 	scanner := bufio.NewScanner(namesFile)
 	for scanner.Scan() {
@@ -65,7 +37,8 @@ func parseNamesFile(namesFile io.Reader) []string {
 	return a
 }
 
-func createNamesOrdering(names []string) map[string]int {
+// CreateNamesOrdering creates a mapping of each name to its respective input position
+func CreateNamesOrdering(names []string) map[string]int {
 	namesOrdering := make(map[string]int)
 	for i, name := range names {
 		namesOrdering[name] = i
@@ -73,48 +46,87 @@ func createNamesOrdering(names []string) map[string]int {
 	return namesOrdering
 }
 
-type FetchedContents struct {
-	namedURL NamedURL
-	contents string
-	err      error
+// HTTPIgnoreGetter provides an implementation to retrieve gitignore patterns from
+// files available over HTTP
+type HTTPIgnoreGetter struct {
+	baseURL          string
+	defaultExtension string
 }
 
-func fetchIgnoreFiles(contentsChannel chan FetchedContents, namedURLs []NamedURL) {
-	var wg sync.WaitGroup
+// RetrievedContents represents the result of retrieving contents of a gitignore patterns
+// file
+type RetrievedContents struct {
+	namedSource NamedSource
+	contents    string
+	err         error
+}
+
+// NamedSource represents a source containing gitignore patterns, along with a given name
+type NamedSource struct {
+	name   string
+	source string
+}
+
+// GetIgnoreFiles retrieves gitignore patterns files via HTTP and sends their contents
+// over a channel. It registers each request made with a WaitGroup instance, so the
+// responses can be awaited.
+func (getter *HTTPIgnoreGetter) GetIgnoreFiles(names []string, contentsChannel chan RetrievedContents, requestsPending *sync.WaitGroup) {
+	namedURLs := getter.NamesToUrls(names)
 	for _, namedURL := range namedURLs {
-		wg.Add(1)
-		log.Println("Retrieving", namedURL.url)
-		go fetchIgnoreFile(namedURL, contentsChannel, &wg)
+		requestsPending.Add(1)
+		log.Println("Retrieving", namedURL.source)
+		go fetchIgnoreFile(namedURL, contentsChannel, requestsPending)
 	}
-	wg.Wait()
-	close(contentsChannel)
 }
 
-type FailedURL struct {
-	url string
-	err error
+// NamesToUrls converts names of gitignore files to URLs
+func (getter *HTTPIgnoreGetter) NamesToUrls(names []string) []NamedSource {
+	urls := make([]NamedSource, len(names))
+	for i, name := range names {
+		urls[i] = getter.nameToURL(name)
+	}
+	return urls
 }
 
-func (failedURL *FailedURL) Error() string {
-	return fmt.Sprintf("%s %s", failedURL.url, failedURL.err.Error())
+func (getter *HTTPIgnoreGetter) nameToURL(name string) NamedSource {
+	nameWithExtension := getter.getNameWithExtension(name)
+	url := getter.baseURL + "/" + nameWithExtension
+	return NamedSource{name, url}
 }
 
-func fetchIgnoreFile(namedURL NamedURL, contentsChannel chan FetchedContents, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var fc FetchedContents
-	url := namedURL.url
+func (getter *HTTPIgnoreGetter) getNameWithExtension(name string) string {
+	if filepath.Ext(name) == "" {
+		name = name + getter.defaultExtension
+	}
+	return name
+}
+
+// FailedSource represents a source unable to be retrieved or processed
+type FailedSource struct {
+	source string
+	err    error
+}
+
+func (fs *FailedSource) Error() string {
+	return fmt.Sprintf("%s %s", fs.source, fs.err.Error())
+}
+
+func fetchIgnoreFile(namedURL NamedSource, contentsChannel chan RetrievedContents, requestsPending *sync.WaitGroup) {
+	defer requestsPending.Done()
+	var fc RetrievedContents
+	url := namedURL.source
 	response, err := http.Get(url)
 	if err != nil {
-		fc = FetchedContents{namedURL, "", err}
+		fc = RetrievedContents{namedURL, "", err}
 	} else if response.StatusCode != 200 {
-		fc = FetchedContents{namedURL, "", fmt.Errorf("Got status code %d", response.StatusCode)}
+		fc = RetrievedContents{namedURL, "", fmt.Errorf("Got status code %d", response.StatusCode)}
 	} else {
 		defer response.Body.Close()
 		content, err := getContent(response.Body)
 		if err != nil {
-			fc = FetchedContents{namedURL, "", fmt.Errorf("Error reading response body: %s", err.Error())}
+			fc = RetrievedContents{namedURL, "", fmt.Errorf("Error reading response body: %s", err.Error())}
 		} else {
-			fc = FetchedContents{namedURL, content, nil}
+			fc = RetrievedContents{namedURL, content, nil}
 		}
 	}
 	contentsChannel <- fc
@@ -129,54 +141,60 @@ func getContent(body io.ReadCloser) (content string, err error) {
 	return content, err
 }
 
-type FailedURLs struct {
-	urls []*FailedURL
+// FailedSources represents a collection of FailedSource instances
+type FailedSources struct {
+	sources []*FailedSource
 }
 
-func (failedURLs *FailedURLs) Add(failedURL *FailedURL) {
-	failedURLs.urls = append(failedURLs.urls, failedURL)
+// Add adds a FailedSource instance to the FailedSources collection
+func (failedSources *FailedSources) Add(failedSource *FailedSource) {
+	failedSources.sources = append(failedSources.sources, failedSource)
 }
 
-func (failedURLs *FailedURLs) Error() string {
-	urlErrors := make([]string, len(failedURLs.urls))
-	for i, failedURL := range failedURLs.urls {
-		urlErrors[i] = failedURL.Error()
+func (failedSources *FailedSources) Error() string {
+	sourceErrors := make([]string, len(failedSources.sources))
+	for i, failedSource := range failedSources.sources {
+		sourceErrors[i] = failedSource.Error()
 	}
-	stringOfErrors := strings.Join(urlErrors, "\n")
+	stringOfErrors := strings.Join(sourceErrors, "\n")
 	return "Errors for the following URLs:\n" + stringOfErrors
 }
 
+// NamedIgnoreContents represents the contents (patterns and comments) of a
+// gitignore file
 type NamedIgnoreContents struct {
 	name     string
 	contents string
 }
 
+// DisplayName returns the decorated name, suitable for a section header in a
+// gitignore file
 func (nic *NamedIgnoreContents) DisplayName() string {
 	baseName := filepath.Base(nic.name)
 	return strings.TrimSuffix(baseName, filepath.Ext(baseName))
 }
 
-func processContents(contentsChannel chan FetchedContents, namesOrdering map[string]int) ([]NamedIgnoreContents, error) {
-	retrievedContents := make([]NamedIgnoreContents, len(namesOrdering))
+func processContents(contentsChannel chan RetrievedContents, namesOrdering map[string]int) ([]NamedIgnoreContents, error) {
+	allRetrievedContents := make([]NamedIgnoreContents, len(namesOrdering))
 	var err error
-	failedURLs := new(FailedURLs)
-	for fetchedContents := range contentsChannel {
-		if fetchedContents.err != nil {
-			failedURL := &FailedURL{fetchedContents.namedURL.url, fetchedContents.err}
-			failedURLs.Add(failedURL)
+	failedSources := new(FailedSources)
+	for retrievedContents := range contentsChannel {
+		if retrievedContents.err != nil {
+			failedSource := &FailedSource{retrievedContents.namedSource.source, retrievedContents.err}
+			failedSources.Add(failedSource)
 		} else {
-			name := fetchedContents.namedURL.name
+			name := retrievedContents.namedSource.name
 			position, present := namesOrdering[name]
 			if !present {
-				return retrievedContents, fmt.Errorf("Could not find name %s in ordering", name)
+				return allRetrievedContents, fmt.Errorf("Could not find name %s in ordering", name)
 			}
-			retrievedContents[position] = NamedIgnoreContents{name, fetchedContents.contents}
+			allRetrievedContents[position] = NamedIgnoreContents{name, retrievedContents.contents}
 		}
 	}
-	if len(failedURLs.urls) > 0 {
-		err = failedURLs
+	if len(failedSources.sources) > 0 {
+		err = failedSources
 	}
-	return retrievedContents, err
+	return allRetrievedContents, err
 }
 
 func writeIgnoreFile(ignoreFile io.Writer, contents []NamedIgnoreContents) (err error) {
@@ -214,9 +232,14 @@ func creatCLI() *cli.App {
 			Usage: "Fetches gitignore patterns files from a central source and concatenates them",
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name:  "base-url",
+					Name:  "base-url, u",
 					Usage: "The URL under which gitignore files can be found",
 					Value: "https://raw.githubusercontent.com/github/gitignore/master",
+				},
+				cli.StringFlag{
+					Name:  "default-extension, e",
+					Usage: "The default file extension appended to names when retrieving them",
+					Value: ".gitignore",
 				},
 				cli.IntFlag{
 					Name:  "max-connections",
@@ -242,12 +265,14 @@ func creatCLI() *cli.App {
 }
 
 func fetchAllIgnoreFiles(context *cli.Context) error {
-	fetcher := IgnoreFetcher{baseURL: context.String("base-url")}
 	names := getNamesFromArguments(context)
-	namesOrdering := createNamesOrdering(names)
-	urls := fetcher.NamesToUrls(names)
-	contentsChannel := make(chan FetchedContents, context.Int("max-connections"))
-	go fetchIgnoreFiles(contentsChannel, urls)
+	namesOrdering := CreateNamesOrdering(names)
+	getter := HTTPIgnoreGetter{context.String("base-url"), context.String("default-extension")}
+	contentsChannel := make(chan RetrievedContents, context.Int("max-connections"))
+	var requestsPending sync.WaitGroup
+	getter.GetIgnoreFiles(names, contentsChannel, &requestsPending)
+	requestsPending.Wait()
+	close(contentsChannel)
 	contents, err := processContents(contentsChannel, namesOrdering)
 	if err != nil {
 		return err
