@@ -24,7 +24,7 @@ Download and unpack a pre-compiled executable from [the releases page](https://g
 
 ### Other platforms
 
-See [the Building section, below](#buiding).
+See [the Building section, below](#building).
 
 
 ## Usage
