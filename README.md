@@ -17,6 +17,14 @@ brew update
 brew install getignore
 ```
 
+### Chocolatey users (Windows)
+
+[Chocolatey](https://chocolatey.org/) users can install getignore using the following command (as admin):
+
+```shell
+choco install getignore
+```
+
 ### Windows, Linux, and OS X
 
 Download and unpack a pre-compiled executable from [the releases page](https://github.com/gotgenes/getignore/releases). Make sure to place the executable in your shell's `PATH`.
