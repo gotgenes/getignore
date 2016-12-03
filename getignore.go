@@ -197,6 +197,17 @@ func processContents(contentsChannel chan RetrievedContents, namesOrdering map[s
 	return allRetrievedContents, err
 }
 
+func getOutputFile(context *cli.Context) (outputFilePath string, outputFile io.Writer, err error) {
+	outputFilePath = context.String("o")
+	if outputFilePath == "" {
+		outputFilePath = "STDOUT"
+		outputFile = os.Stdout
+	} else {
+		outputFile, err = os.Create(outputFilePath)
+	}
+	return
+}
+
 func writeIgnoreFile(ignoreFile io.Writer, contents []NamedIgnoreContents) (err error) {
 	writer := bufio.NewWriter(ignoreFile)
 	for i, nc := range contents {
@@ -223,7 +234,7 @@ func decorateName(name string) string {
 func creatCLI() *cli.App {
 	app := cli.NewApp()
 	app.Name = "getignore"
-	app.Version = "0.1.0"
+	app.Version = "0.2.0.dev"
 	app.Usage = "Creates gitignore files from central sources"
 
 	app.Commands = []cli.Command{
@@ -252,8 +263,7 @@ func creatCLI() *cli.App {
 				},
 				cli.StringFlag{
 					Name:  "o",
-					Usage: "Path to output file",
-					Value: ".gitignore",
+					Usage: "Path to output file (default: STDOUT)",
 				},
 			},
 			ArgsUsage: "[gitignore_name] [gitignore_name …]",
@@ -277,13 +287,12 @@ func fetchAllIgnoreFiles(context *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	outputFilePath := context.String("o")
-	f, err := os.Create(outputFilePath)
+	outputFilePath, outputFile, err := getOutputFile(context)
 	if err != nil {
 		return err
 	}
 	log.Println("Writing contents to", outputFilePath)
-	err = writeIgnoreFile(f, contents)
+	err = writeIgnoreFile(outputFile, contents)
 	if err != nil {
 		return err
 	}
