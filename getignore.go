@@ -296,7 +296,6 @@ func downloadAllIgnoreFiles(context *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	log.Print("Finished")
 	return err
 }
 
