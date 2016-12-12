@@ -75,7 +75,7 @@ func (getter *HTTPIgnoreGetter) GetIgnoreFiles(names []string, contentsChannel c
 	for _, namedURL := range namedURLs {
 		requestsPending.Add(1)
 		log.Println("Retrieving", namedURL.source)
-		go fetchIgnoreFile(namedURL, contentsChannel, requestsPending)
+		go downloadIgnoreFile(namedURL, contentsChannel, requestsPending)
 	}
 }
 
@@ -111,7 +111,7 @@ func (fs *FailedSource) Error() string {
 	return fmt.Sprintf("%s %s", fs.source, fs.err.Error())
 }
 
-func fetchIgnoreFile(namedURL NamedSource, contentsChannel chan RetrievedContents, requestsPending *sync.WaitGroup) {
+func downloadIgnoreFile(namedURL NamedSource, contentsChannel chan RetrievedContents, requestsPending *sync.WaitGroup) {
 	defer requestsPending.Done()
 	var fc RetrievedContents
 	url := namedURL.source
@@ -235,12 +235,12 @@ func creatCLI() *cli.App {
 	app := cli.NewApp()
 	app.Name = "getignore"
 	app.Version = "0.2.0.dev"
-	app.Usage = "Creates gitignore files from central sources"
+	app.Usage = "Bootstraps gitignore files from central sources"
 
 	app.Commands = []cli.Command{
 		cli.Command{
 			Name:  "get",
-			Usage: "Fetches gitignore patterns files from a central source and concatenates them",
+			Usage: "Retrieves gitignore patterns files from a central source and concatenates them",
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "base-url, u",
@@ -267,14 +267,14 @@ func creatCLI() *cli.App {
 				},
 			},
 			ArgsUsage: "[gitignore_name] [gitignore_name …]",
-			Action:    fetchAllIgnoreFiles,
+			Action:    downloadAllIgnoreFiles,
 		},
 	}
 
 	return app
 }
 
-func fetchAllIgnoreFiles(context *cli.Context) error {
+func downloadAllIgnoreFiles(context *cli.Context) error {
 	names := getNamesFromArguments(context)
 	namesOrdering := CreateNamesOrdering(names)
 	getter := HTTPIgnoreGetter{context.String("base-url"), context.String("default-extension")}
