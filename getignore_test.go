@@ -3,7 +3,10 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
+	"sync"
 	"testing"
 )
 
@@ -87,6 +90,117 @@ https://raw.githubusercontent.com/github/gitignore/master/Totally.gitignore Erro
 	errorStr := failedURLs.Error()
 	if errorStr != expectedErrorStr {
 		t.Errorf(errorTemplate, errorStr, expectedErrorStr)
+	}
+}
+
+type NameWithExpectedContents struct {
+	name             string
+	expectedURLPath  string
+	expectedContents string
+	expectedError    error
+}
+
+func TestGetIgnoreFilesForNameOnly(t *testing.T) {
+	testServer := httptest.NewServer(http.HandlerFunc(handlerFunc))
+	defer testServer.Close()
+	assertGetIgnoreFilesReturnsExpectedContents(
+		t,
+		testServer,
+		[]NameWithExpectedContents{
+			{
+				"Global/Vim",
+				"/Global/Vim.gitignore",
+				".*.swp\nSession.vim\n",
+				nil,
+			},
+		},
+	)
+}
+
+func TestGetIgnoreFilesWithDefaultExtension(t *testing.T) {
+	testServer := httptest.NewServer(http.HandlerFunc(handlerFunc))
+	defer testServer.Close()
+	assertGetIgnoreFilesReturnsExpectedContents(
+		t,
+		testServer,
+		[]NameWithExpectedContents{
+			{
+				"Global/Vim.gitignore",
+				"/Global/Vim.gitignore",
+				".*.swp\nSession.vim\n",
+				nil,
+			},
+		},
+	)
+}
+
+func TestGetIgnoreFilesWithDifferentExtension(t *testing.T) {
+	testServer := httptest.NewServer(http.HandlerFunc(handlerFunc))
+	defer testServer.Close()
+	assertGetIgnoreFilesReturnsExpectedContents(
+		t,
+		testServer,
+		[]NameWithExpectedContents{
+			{
+				"Foo.bar",
+				"/Foo.bar",
+				"abc\nxyz\n",
+				nil,
+			},
+		},
+	)
+}
+
+func TestGetIgnoreFilesNotFound(t *testing.T) {
+	testServer := httptest.NewServer(http.HandlerFunc(handlerFunc))
+	defer testServer.Close()
+	assertGetIgnoreFilesReturnsExpectedContents(
+		t,
+		testServer,
+		[]NameWithExpectedContents{
+			{
+				"Nonexistent",
+				"/Nonexistent.gitignore",
+				"",
+				fmt.Errorf("Got status code 404"),
+			},
+		},
+	)
+}
+
+func assertGetIgnoreFilesReturnsExpectedContents(t *testing.T, testServer *httptest.Server, namesWithContents []NameWithExpectedContents) {
+	getter := HTTPIgnoreGetter{
+		testServer.URL,
+		".gitignore",
+	}
+	contentsChannel := make(chan RetrievedContents)
+	var requestsPending sync.WaitGroup
+	for _, nameWithContents := range namesWithContents {
+		expectedContents := RetrievedContents{
+			NamedSource{nameWithContents.name, testServer.URL + nameWithContents.expectedURLPath},
+			nameWithContents.expectedContents,
+			nameWithContents.expectedError,
+		}
+		go getter.GetIgnoreFiles([]string{nameWithContents.name}, contentsChannel, &requestsPending)
+		gotContents := <-contentsChannel
+		if !reflect.DeepEqual(gotContents, expectedContents) {
+			t.Errorf(errorTemplate, gotContents, expectedContents)
+		}
+	}
+}
+
+var pathsToContents = map[string]string{
+	"Global/Vim.gitignore": ".*.swp\nSession.vim\n",
+	"Go.gitignore":         "*.o\n*.a\n*.so\n",
+	"Foo.bar":              "abc\nxyz\n",
+}
+
+func handlerFunc(w http.ResponseWriter, r *http.Request) {
+	contents, ok := pathsToContents[r.URL.Path[1:]]
+	if ok {
+		fmt.Fprint(w, contents)
+	} else {
+		w.WriteHeader(404)
 	}
 }
 
