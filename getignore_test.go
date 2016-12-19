@@ -93,23 +93,16 @@ https://raw.githubusercontent.com/github/gitignore/master/Totally.gitignore Erro
 	}
 }
 
-type NameWithExpectedContents struct {
-	name             string
-	expectedURLPath  string
-	expectedContents string
-	expectedError    error
-}
-
 func TestGetIgnoreFilesForNameOnly(t *testing.T) {
 	testServer := httptest.NewServer(http.HandlerFunc(handlerFunc))
 	defer testServer.Close()
 	assertGetIgnoreFilesReturnsExpectedContents(
 		t,
 		testServer,
-		[]NameWithExpectedContents{
+		[]string{"Global/Vim"},
+		[]RetrievedContents{
 			{
-				"Global/Vim",
-				"/Global/Vim.gitignore",
+				NamedSource{"Global/Vim", testServer.URL + "/Global/Vim.gitignore"},
 				".*.swp\nSession.vim\n",
 				nil,
 			},
@@ -123,10 +116,10 @@ func TestGetIgnoreFilesWithDefaultExtension(t *testing.T) {
 	assertGetIgnoreFilesReturnsExpectedContents(
 		t,
 		testServer,
-		[]NameWithExpectedContents{
+		[]string{"Global/Vim.gitignore"},
+		[]RetrievedContents{
 			{
-				"Global/Vim.gitignore",
-				"/Global/Vim.gitignore",
+				NamedSource{"Global/Vim.gitignore", testServer.URL + "/Global/Vim.gitignore"},
 				".*.swp\nSession.vim\n",
 				nil,
 			},
@@ -140,10 +133,10 @@ func TestGetIgnoreFilesWithDifferentExtension(t *testing.T) {
 	assertGetIgnoreFilesReturnsExpectedContents(
 		t,
 		testServer,
-		[]NameWithExpectedContents{
+		[]string{"Foo.bar"},
+		[]RetrievedContents{
 			{
-				"Foo.bar",
-				"/Foo.bar",
+				NamedSource{"Foo.bar", testServer.URL + "/Foo.bar"},
 				"abc\nxyz\n",
 				nil,
 			},
@@ -157,10 +150,10 @@ func TestGetIgnoreFilesNotFound(t *testing.T) {
 	assertGetIgnoreFilesReturnsExpectedContents(
 		t,
 		testServer,
-		[]NameWithExpectedContents{
+		[]string{"Nonexistent"},
+		[]RetrievedContents{
 			{
-				"Nonexistent",
-				"/Nonexistent.gitignore",
+				NamedSource{"Nonexistent", testServer.URL + "/Nonexistent.gitignore"},
 				"",
 				fmt.Errorf("Got status code 404"),
 			},
@@ -168,20 +161,15 @@ func TestGetIgnoreFilesNotFound(t *testing.T) {
 	)
 }
 
-func assertGetIgnoreFilesReturnsExpectedContents(t *testing.T, testServer *httptest.Server, namesWithContents []NameWithExpectedContents) {
+func assertGetIgnoreFilesReturnsExpectedContents(t *testing.T, testServer *httptest.Server, names []string, allExpectedContents []RetrievedContents) {
 	getter := HTTPIgnoreGetter{
 		testServer.URL,
 		".gitignore",
 	}
 	contentsChannel := make(chan RetrievedContents)
 	var requestsPending sync.WaitGroup
-	for _, nameWithContents := range namesWithContents {
-		expectedContents := RetrievedContents{
-			NamedSource{nameWithContents.name, testServer.URL + nameWithContents.expectedURLPath},
-			nameWithContents.expectedContents,
-			nameWithContents.expectedError,
-		}
-		go getter.GetIgnoreFiles([]string{nameWithContents.name}, contentsChannel, &requestsPending)
+	getter.GetIgnoreFiles(names, contentsChannel, &requestsPending)
+	for _, expectedContents := range allExpectedContents {
 		gotContents := <-contentsChannel
 		if !reflect.DeepEqual(gotContents, expectedContents) {
 			t.Errorf(errorTemplate, gotContents, expectedContents)
