@@ -51,6 +51,7 @@ func CreateNamesOrdering(names []string) map[string]int {
 type HTTPIgnoreGetter struct {
 	baseURL          string
 	defaultExtension string
+	maxConnections   int
 }
 
 // RetrievedContents represents the result of retrieving contents of a gitignore patterns
@@ -72,11 +73,16 @@ type NamedSource struct {
 // responses can be awaited.
 func (getter *HTTPIgnoreGetter) GetIgnoreFiles(names []string, contentsChannel chan RetrievedContents, requestsPending *sync.WaitGroup) {
 	namedURLs := getter.NamesToUrls(names)
+	namedURLChannel := make(chan NamedSource)
+	for i := 0; i < getter.maxConnections; i++ {
+		go downloadIgnoreFile(namedURLChannel, contentsChannel, requestsPending)
+	}
 	for _, namedURL := range namedURLs {
 		requestsPending.Add(1)
 		log.Println("Retrieving", namedURL.source)
-		go downloadIgnoreFile(namedURL, contentsChannel, requestsPending)
+		namedURLChannel <- namedURL
 	}
+	close(namedURLChannel)
 }
 
 // NamesToUrls converts names of gitignore files to URLs
@@ -111,25 +117,27 @@ func (fs *FailedSource) Error() string {
 	return fmt.Sprintf("%s %s", fs.source, fs.err.Error())
 }
 
-func downloadIgnoreFile(namedURL NamedSource, contentsChannel chan RetrievedContents, requestsPending *sync.WaitGroup) {
-	defer requestsPending.Done()
+func downloadIgnoreFile(namedURLChannel chan NamedSource, contentsChannel chan RetrievedContents, requestsPending *sync.WaitGroup) {
 	var fc RetrievedContents
-	url := namedURL.source
-	response, err := http.Get(url)
-	if err != nil {
-		fc = RetrievedContents{namedURL, "", err}
-	} else if response.StatusCode != 200 {
-		fc = RetrievedContents{namedURL, "", fmt.Errorf("Got status code %d", response.StatusCode)}
-	} else {
-		defer response.Body.Close()
-		content, err := getContent(response.Body)
+	for namedURL := range namedURLChannel {
+		url := namedURL.source
+		response, err := http.Get(url)
 		if err != nil {
-			fc = RetrievedContents{namedURL, "", fmt.Errorf("Error reading response body: %s", err.Error())}
+			fc = RetrievedContents{namedURL, "", err}
+		} else if response.StatusCode != 200 {
+			fc = RetrievedContents{namedURL, "", fmt.Errorf("Got status code %d", response.StatusCode)}
 		} else {
-			fc = RetrievedContents{namedURL, content, nil}
+			defer response.Body.Close()
+			content, err := getContent(response.Body)
+			if err != nil {
+				fc = RetrievedContents{namedURL, "", fmt.Errorf("Error reading response body: %s", err.Error())}
+			} else {
+				fc = RetrievedContents{namedURL, content, nil}
+			}
 		}
+		contentsChannel <- fc
+		requestsPending.Done()
 	}
-	contentsChannel <- fc
 }
 
 func getContent(body io.ReadCloser) (content string, err error) {
@@ -277,7 +285,7 @@ func creatCLI() *cli.App {
 func downloadAllIgnoreFiles(context *cli.Context) error {
 	names := getNamesFromArguments(context)
 	namesOrdering := CreateNamesOrdering(names)
-	getter := HTTPIgnoreGetter{context.String("base-url"), context.String("default-extension")}
+	getter := HTTPIgnoreGetter{context.String("base-url"), context.String("default-extension"), context.Int("max-connections")}
 	contentsChannel := make(chan RetrievedContents, context.Int("max-connections"))
 	var requestsPending sync.WaitGroup
 	getter.GetIgnoreFiles(names, contentsChannel, &requestsPending)

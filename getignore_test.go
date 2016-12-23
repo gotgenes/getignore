@@ -60,6 +60,7 @@ func TestNamesToUrls(t *testing.T) {
 	getter := HTTPIgnoreGetter{
 		"https://raw.githubusercontent.com/github/gitignore/master",
 		".gitignore",
+		1,
 	}
 	names := []string{"Go", "Python", "Global/Vim.gitignore", "Some.patterns"}
 	urls := getter.NamesToUrls(names)
@@ -165,6 +166,7 @@ func assertGetIgnoreFilesReturnsExpectedContents(t *testing.T, testServer *httpt
 	getter := HTTPIgnoreGetter{
 		testServer.URL,
 		".gitignore",
+		1,
 	}
 	contentsChannel := make(chan RetrievedContents)
 	var requestsPending sync.WaitGroup
