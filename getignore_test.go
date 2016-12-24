@@ -56,25 +56,6 @@ func TestNamedIgnoreContentsDisplayName(t *testing.T) {
 	}
 }
 
-func TestNamesToUrls(t *testing.T) {
-	getter := HTTPIgnoreGetter{
-		"https://raw.githubusercontent.com/github/gitignore/master",
-		".gitignore",
-		1,
-	}
-	names := []string{"Go", "Python", "Global/Vim.gitignore", "Some.patterns"}
-	urls := getter.NamesToUrls(names)
-	expectedURLs := []NamedSource{
-		NamedSource{"Go", "https://raw.githubusercontent.com/github/gitignore/master/Go.gitignore"},
-		NamedSource{"Python", "https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore"},
-		NamedSource{"Global/Vim.gitignore", "https://raw.githubusercontent.com/github/gitignore/master/Global/Vim.gitignore"},
-		NamedSource{"Some.patterns", "https://raw.githubusercontent.com/github/gitignore/master/Some.patterns"},
-	}
-	if !reflect.DeepEqual(urls, expectedURLs) {
-		t.Errorf(errorTemplate, urls, expectedURLs)
-	}
-}
-
 func TestFailedURLsError(t *testing.T) {
 	failedURLs := new(FailedSources)
 	failedURLs.Add(

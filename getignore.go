@@ -72,26 +72,17 @@ type NamedSource struct {
 // over a channel. It registers each request made with a WaitGroup instance, so the
 // responses can be awaited.
 func (getter *HTTPIgnoreGetter) GetIgnoreFiles(names []string, contentsChannel chan RetrievedContents, requestsPending *sync.WaitGroup) {
-	namedURLs := getter.NamesToUrls(names)
 	namedURLChannel := make(chan NamedSource)
 	for i := 0; i < getter.maxConnections; i++ {
 		go downloadIgnoreFile(namedURLChannel, contentsChannel, requestsPending)
 	}
-	for _, namedURL := range namedURLs {
+	for _, name := range names {
+		namedURL := getter.nameToURL(name)
 		requestsPending.Add(1)
 		log.Println("Retrieving", namedURL.source)
 		namedURLChannel <- namedURL
 	}
 	close(namedURLChannel)
-}
-
-// NamesToUrls converts names of gitignore files to URLs
-func (getter *HTTPIgnoreGetter) NamesToUrls(names []string) []NamedSource {
-	urls := make([]NamedSource, len(names))
-	for i, name := range names {
-		urls[i] = getter.nameToURL(name)
-	}
-	return urls
 }
 
 func (getter *HTTPIgnoreGetter) nameToURL(name string) NamedSource {
