@@ -57,45 +57,25 @@ type HTTPIgnoreGetter struct {
 // RetrievedContents represents the result of retrieving contents of a gitignore patterns
 // file
 type RetrievedContents struct {
-	namedSource NamedSource
-	contents    string
-	err         error
-}
-
-// NamedSource represents a source containing gitignore patterns, along with a given name
-type NamedSource struct {
-	name   string
-	source string
+	name     string
+	source   string
+	contents string
+	err      error
 }
 
 // GetIgnoreFiles retrieves gitignore patterns files via HTTP and sends their contents
 // over a channel. It registers each request made with a WaitGroup instance, so the
 // responses can be awaited.
 func (getter *HTTPIgnoreGetter) GetIgnoreFiles(names []string, contentsChannel chan RetrievedContents, requestsPending *sync.WaitGroup) {
-	namedURLChannel := make(chan NamedSource)
+	namesChannel := make(chan string)
 	for i := 0; i < getter.maxConnections; i++ {
-		go downloadIgnoreFile(namedURLChannel, contentsChannel, requestsPending)
+		go getter.downloadIgnoreFile(namesChannel, contentsChannel, requestsPending)
 	}
 	for _, name := range names {
-		namedURL := getter.nameToURL(name)
 		requestsPending.Add(1)
-		log.Println("Retrieving", namedURL.source)
-		namedURLChannel <- namedURL
+		namesChannel <- name
 	}
-	close(namedURLChannel)
-}
-
-func (getter *HTTPIgnoreGetter) nameToURL(name string) NamedSource {
-	nameWithExtension := getter.getNameWithExtension(name)
-	url := getter.baseURL + "/" + nameWithExtension
-	return NamedSource{name, url}
-}
-
-func (getter *HTTPIgnoreGetter) getNameWithExtension(name string) string {
-	if filepath.Ext(name) == "" {
-		name = name + getter.defaultExtension
-	}
-	return name
+	close(namesChannel)
 }
 
 // FailedSource represents a source unable to be retrieved or processed
@@ -108,27 +88,28 @@ func (fs *FailedSource) Error() string {
 	return fmt.Sprintf("%s %s", fs.source, fs.err.Error())
 }
 
-func downloadIgnoreFile(namedURLChannel chan NamedSource, contentsChannel chan RetrievedContents, requestsPending *sync.WaitGroup) {
-	var fc RetrievedContents
-	for namedURL := range namedURLChannel {
-		url := namedURL.source
+func (getter *HTTPIgnoreGetter) downloadIgnoreFile(namesChannel chan string, contentsChannel chan RetrievedContents, requestsPending *sync.WaitGroup) {
+	for name := range namesChannel {
+		url := getter.nameToURL(name)
+		log.Println("Retrieving", url)
 		response, err := http.Get(url)
-		if err != nil {
-			fc = RetrievedContents{namedURL, "", err}
-		} else if response.StatusCode != 200 {
-			fc = RetrievedContents{namedURL, "", fmt.Errorf("Got status code %d", response.StatusCode)}
-		} else {
-			defer response.Body.Close()
-			content, err := getContent(response.Body)
-			if err != nil {
-				fc = RetrievedContents{namedURL, "", fmt.Errorf("Error reading response body: %s", err.Error())}
-			} else {
-				fc = RetrievedContents{namedURL, content, nil}
-			}
-		}
-		contentsChannel <- fc
+		contents, err := getter.processResponse(response, err)
+		contentsChannel <- RetrievedContents{name, url, contents, err}
 		requestsPending.Done()
 	}
+}
+
+func (getter *HTTPIgnoreGetter) nameToURL(name string) string {
+	nameWithExtension := getter.getNameWithExtension(name)
+	url := getter.baseURL + "/" + nameWithExtension
+	return url
+}
+
+func (getter *HTTPIgnoreGetter) getNameWithExtension(name string) string {
+	if filepath.Ext(name) == "" {
+		name = name + getter.defaultExtension
+	}
+	return name
 }
 
 func getContent(body io.ReadCloser) (content string, err error) {
@@ -138,6 +119,22 @@ func getContent(body io.ReadCloser) (content string, err error) {
 	}
 	err = scanner.Err()
 	return content, err
+}
+
+func (getter *HTTPIgnoreGetter) processResponse(response *http.Response, err error) (contents string, processedErr error) {
+	if err != nil {
+		processedErr = err
+	} else if response.StatusCode != 200 {
+		processedErr = fmt.Errorf("Got status code %d", response.StatusCode)
+	} else {
+		defer response.Body.Close()
+		var contentErr error
+		contents, contentErr = getContent(response.Body)
+		if contentErr != nil {
+			processedErr = fmt.Errorf("Error reading response body: %s", contentErr.Error())
+		}
+	}
+	return
 }
 
 // FailedSources represents a collection of FailedSource instances
@@ -179,10 +176,10 @@ func processContents(contentsChannel chan RetrievedContents, namesOrdering map[s
 	failedSources := new(FailedSources)
 	for retrievedContents := range contentsChannel {
 		if retrievedContents.err != nil {
-			failedSource := &FailedSource{retrievedContents.namedSource.source, retrievedContents.err}
+			failedSource := &FailedSource{retrievedContents.source, retrievedContents.err}
 			failedSources.Add(failedSource)
 		} else {
-			name := retrievedContents.namedSource.name
+			name := retrievedContents.name
 			position, present := namesOrdering[name]
 			if !present {
 				return allRetrievedContents, fmt.Errorf("Could not find name %s in ordering", name)

@@ -84,7 +84,8 @@ func TestGetIgnoreFilesForNameOnly(t *testing.T) {
 		[]string{"Global/Vim"},
 		[]RetrievedContents{
 			{
-				NamedSource{"Global/Vim", testServer.URL + "/Global/Vim.gitignore"},
+				"Global/Vim",
+				testServer.URL + "/Global/Vim.gitignore",
 				".*.swp\nSession.vim\n",
 				nil,
 			},
@@ -101,7 +102,8 @@ func TestGetIgnoreFilesWithDefaultExtension(t *testing.T) {
 		[]string{"Global/Vim.gitignore"},
 		[]RetrievedContents{
 			{
-				NamedSource{"Global/Vim.gitignore", testServer.URL + "/Global/Vim.gitignore"},
+				"Global/Vim.gitignore",
+				testServer.URL + "/Global/Vim.gitignore",
 				".*.swp\nSession.vim\n",
 				nil,
 			},
@@ -118,7 +120,8 @@ func TestGetIgnoreFilesWithDifferentExtension(t *testing.T) {
 		[]string{"Foo.bar"},
 		[]RetrievedContents{
 			{
-				NamedSource{"Foo.bar", testServer.URL + "/Foo.bar"},
+				"Foo.bar",
+				testServer.URL + "/Foo.bar",
 				"abc\nxyz\n",
 				nil,
 			},
@@ -135,7 +138,8 @@ func TestGetIgnoreFilesNotFound(t *testing.T) {
 		[]string{"Nonexistent"},
 		[]RetrievedContents{
 			{
-				NamedSource{"Nonexistent", testServer.URL + "/Nonexistent.gitignore"},
+				"Nonexistent",
+				testServer.URL + "/Nonexistent.gitignore",
 				"",
 				fmt.Errorf("Got status code 404"),
 			},
