@@ -8,8 +8,8 @@
 
 ### Changed
 
-* `get` command now writes output to `STDOUT` by default (previously defaulted to `.gitignore` in the current working directory)
-* Renamed several internal functions
+* `get` command now writes output to `STDOUT` by default (previously defaulted to `.gitignore` in the current working directory).
+* Reorganized code into separate packages.
 
 ## 0.1.0 2016-11-17
 
