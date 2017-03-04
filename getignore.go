@@ -86,7 +86,7 @@ func getOutputFile(context *cli.Context) (outputFilePath string, outputFile io.W
 func creatCLI() *cli.App {
 	app := cli.NewApp()
 	app.Name = "getignore"
-	app.Version = "0.2.0"
+	app.Version = "0.3.0.dev0"
 	app.Usage = "Bootstraps gitignore files from central sources"
 
 	app.Commands = []cli.Command{

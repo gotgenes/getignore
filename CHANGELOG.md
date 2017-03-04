@@ -1,5 +1,12 @@
 # Change Log
 
+## 0.3.0 TBD
+
+### Changed
+
+* Updated dependency on [urfave/cli](https://github.com/urfave/cli).
+
+
 ## 0.2.0 2016-12-28
 
 ### Added
