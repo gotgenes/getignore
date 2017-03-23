@@ -12,4 +12,4 @@ install:
   - glide install
 
 script:
-  go test -v $(go list ./... | grep -v /vendor/)
+  go test -v $(glide novendor)
