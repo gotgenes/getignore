@@ -17,11 +17,11 @@ const contentsBodyTemplate = `{
   "truncated": false
  }`
 
-func TestGetFileNamesFromGitHubJSONNoTreeContents(t *testing.T) {
+func TestParseGitTreeToFileNamesNoTreeContents(t *testing.T) {
 	assertReturnsExpectedFileNames(t, "", nil)
 }
 
-func TestGetFileNamesFromGitHubJSON(t *testing.T) {
+func TestParseGitTreeToFileNames(t *testing.T) {
 	treeContents := `
     {
       "path": "Global/Vim.gitignore",
@@ -42,7 +42,7 @@ func TestGetFileNamesFromGitHubJSON(t *testing.T) {
 	assertReturnsExpectedFileNames(t, treeContents, []string{"Global/Vim.gitignore", "Go.gitignore"})
 }
 
-func TestGetFileNamesFromGitHubJSONIgnoresDirectories(t *testing.T) {
+func TestParseGitTreeToFileNamesIgnoresDirectories(t *testing.T) {
 	treeContents := `
     {
       "path": ".github",
@@ -70,14 +70,14 @@ func TestGetFileNamesFromGitHubJSONIgnoresDirectories(t *testing.T) {
 	assertReturnsExpectedFileNames(t, treeContents, []string{"Global/Vim.gitignore", "Go.gitignore"})
 }
 
-func TestGetFileNamesFromGitHubJSONReturnsDecodeError(t *testing.T) {
+func TestParseGitTreeToFileNamesReturnsDecodeError(t *testing.T) {
 	assertReturnsError(
 		t,
 		`}"path": "Go.gitignore", "type": "blob"`,
 		"invalid character '}' looking for beginning of value")
 }
 
-func TestGetFileNamesFromGitHubJSONReturnsUnmarshallError(t *testing.T) {
+func TestParseGitTreeToFileNamesReturnsUnmarshallError(t *testing.T) {
 	assertReturnsError(
 		t,
 		`{"path": "Go.gitignore", "type": 1}`,
@@ -87,14 +87,14 @@ func TestGetFileNamesFromGitHubJSONReturnsUnmarshallError(t *testing.T) {
 func assertReturnsExpectedFileNames(t *testing.T, treeContents string, expectedFileNames []string) {
 	contents := fmt.Sprintf(contentsBodyTemplate, treeContents)
 	responseBody := strings.NewReader(contents)
-	fileNames, _ := getFileNamesFromGitTreeJSON(responseBody)
+	fileNames, _ := parseGitTreeToFileNames(responseBody)
 	testutils.AssertDeepEqual(t, fileNames, expectedFileNames)
 }
 
 func assertReturnsError(t *testing.T, treeContents string, expectedErrorMessage string) {
 	contents := fmt.Sprintf(contentsBodyTemplate, treeContents)
 	responseBody := strings.NewReader(contents)
-	_, err := getFileNamesFromGitTreeJSON(responseBody)
+	_, err := parseGitTreeToFileNames(responseBody)
 	testutils.AssertDeepEqual(t, err.Error(), expectedErrorMessage)
 }
 
