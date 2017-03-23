@@ -14,8 +14,12 @@ import (
 	"github.com/gotgenes/getignore/contentstructs"
 	"github.com/gotgenes/getignore/errors"
 	"github.com/gotgenes/getignore/getters"
+	"github.com/gotgenes/getignore/list"
 	"github.com/gotgenes/getignore/writers"
 )
+
+// Version is the version of getignore
+const Version string = "0.3.0.dev0"
 
 func getNamesFromArguments(context *cli.Context) []string {
 	names := context.Args()
@@ -86,7 +90,7 @@ func getOutputFile(context *cli.Context) (outputFilePath string, outputFile io.W
 func creatCLI() *cli.App {
 	app := cli.NewApp()
 	app.Name = "getignore"
-	app.Version = "0.3.0.dev0"
+	app.Version = Version
 	app.Usage = "Bootstraps gitignore files from central sources"
 
 	app.Commands = []cli.Command{
@@ -121,6 +125,24 @@ func creatCLI() *cli.App {
 			ArgsUsage: "[gitignore_name] [gitignore_name …]",
 			Action:    downloadAllIgnoreFiles,
 		},
+		cli.Command{
+			Name:  "list",
+			Usage: "Retrieves and prints a list of available ignore files",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "api-url, u",
+					Usage: "The GitHub Tree API-compatible URL to the repository of ignore files",
+					Value: "https://api.github.com/repos/github/gitignore/git/trees/master?recursive=1",
+				},
+				cli.StringFlag{
+					Name:  "suffix, s",
+					Usage: "The suffix to use to identify ignore files",
+					Value: ".gitignore",
+				},
+			},
+			ArgsUsage: "",
+			Action:    listIgnoreFiles,
+		},
 	}
 
 	return app
@@ -148,6 +170,15 @@ func downloadAllIgnoreFiles(context *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	return err
+}
+
+func listIgnoreFiles(context *cli.Context) error {
+	outputString, err := list.ListIgnoreFiles(context.String("api-url"), Version, context.String("suffix"))
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Println(outputString)
 	return err
 }
 

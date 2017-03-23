@@ -1,6 +1,6 @@
 # getignore
 
-getignore bootstraps `.gitignore` files from [GitHub .gitignore templates](https://github.com/github/gitignore).
+getignore bootstraps `.gitignore` files from [GitHub .gitignore patterns](https://github.com/github/gitignore).
 
 [![Travis CI Build Status](https://travis-ci.org/gotgenes/getignore.svg?branch=master)](https://travis-ci.org/gotgenes/getignore)
 
@@ -40,6 +40,7 @@ See [the Building section, below](#building).
 getignore supports the following commands:
 
 * [`get`](#get)
+* [`list`](#list)
 * [`help`](#help)
 
 
@@ -113,6 +114,23 @@ getignore get --names-file names.txt
 ```
 
 Please see the `get` usage via `getignore help get` for explanations of other options available.
+
+
+### list
+
+Use this command to get a listing of available gitignore patterns files from a remote repository and print the listing to STDOUT. This allows users to standard \*nix tools to manipulate the command's output. For example, the following command line command can be used to download all the "global" gitignore patterns files:
+
+```
+getignore list | grep Global/ | xargs getignore get
+```
+
+By default, `list` queries the [GitHub .gitignore patterns repository](https://github.com/github/gitignore) using the [GitHub API v3 Trees endpoint](https://developer.github.com/v3/git/trees/). It is possible to pass in a different API URL via the `--api-url` flag, however.
+
+By default, it filters for files that end with the `.gitignore` suffix, however, you can provide an alternative suffix via the `--suffix` flag. To list all files, provide an empty suffix, e.g.
+
+```
+getignore list --suffix ''
+```
 
 
 ## Building

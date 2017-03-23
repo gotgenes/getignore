@@ -2,6 +2,10 @@
 
 ## 0.3.0 TBD
 
+### Added
+
+* `list` command now available
+
 ### Changed
 
 * Updated dependency on [urfave/cli](https://github.com/urfave/cli).
