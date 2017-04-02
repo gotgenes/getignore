@@ -12,24 +12,17 @@ type FailedSource struct {
 }
 
 func (fs *FailedSource) Error() string {
-	return fmt.Sprintf("%s %s", fs.Source, fs.Err.Error())
+	return fmt.Sprintf("%s: %s", fs.Source, fs.Err.Error())
 }
 
 // FailedSources represents a collection of FailedSource instances
-type FailedSources struct {
-	Sources []*FailedSource
-}
+type FailedSources []FailedSource
 
-// Add adds a FailedSource instance to the FailedSources collection
-func (failedSources *FailedSources) Add(failedSource *FailedSource) {
-	failedSources.Sources = append(failedSources.Sources, failedSource)
-}
-
-func (failedSources *FailedSources) Error() string {
-	sourceErrors := make([]string, len(failedSources.Sources))
-	for i, failedSource := range failedSources.Sources {
+func (failedSources FailedSources) Error() string {
+	sourceErrors := make([]string, len(failedSources))
+	for i, failedSource := range failedSources {
 		sourceErrors[i] = failedSource.Error()
 	}
 	stringOfErrors := strings.Join(sourceErrors, "\n")
-	return "Errors for the following URLs:\n" + stringOfErrors
+	return "Errors retrieving the following sources:\n" + stringOfErrors
 }

@@ -65,8 +65,9 @@ func TestGetIgnoreFilesWithDifferentExtension(t *testing.T) {
 func TestGetIgnoreFilesNotFound(t *testing.T) {
 	testServer := httptest.NewServer(http.HandlerFunc(handlerFunc))
 	defer testServer.Close()
-	var expectedError = new(errors.FailedSources)
-	expectedError.Add(&errors.FailedSource{testServer.URL + "/Nonexistent.gitignore", fmt.Errorf("Got status code 404")})
+	expectedError := errors.FailedSources{
+		errors.FailedSource{Source: testServer.URL + "/Nonexistent.gitignore", Err: fmt.Errorf("Got status code 404")},
+	}
 	assertGetIgnoreFilesReturnsExpectedContents(
 		t,
 		testServer,

@@ -26,36 +26,46 @@ type HTTPGetter struct {
 // responses can be awaited.
 func (getter *HTTPGetter) GetIgnoreFiles(names []string) (contents []contentstructs.NamedIgnoreContents, err error) {
 	namesChannel := make(chan string, getter.MaxConnections)
-	contentsChannel := make(chan contentstructs.RetrievedContents)
-	namedContentsChannel := make(chan contentsAndError)
+	contentsChannel := make(chan contentstructs.NamedIgnoreContents)
+	errorsChannel := make(chan errors.FailedSource)
+	namedContentsChannel := make(chan []contentstructs.NamedIgnoreContents)
+	failedSourcesChannel := make(chan errors.FailedSources)
 	var jobsProcessing sync.WaitGroup
 	jobsProcessing.Add(len(names))
-	go getter.downloadIgnoreFiles(namesChannel, contentsChannel)
+	go getter.downloadIgnoreFiles(namesChannel, contentsChannel, errorsChannel)
 	go processContents(contentsChannel, namedContentsChannel, &jobsProcessing)
+	go processErrors(errorsChannel, failedSourcesChannel, &jobsProcessing)
 	for _, name := range names {
 		namesChannel <- name
 	}
 	close(namesChannel)
 	jobsProcessing.Wait()
 	close(contentsChannel)
-	results := <-namedContentsChannel
-	contents = results.Contents
-	err = results.Err
+	close(errorsChannel)
+	contents = <-namedContentsChannel
+	failedSources := <-failedSourcesChannel
+	if len(failedSources) > 0 {
+		err = failedSources
+	}
 	return
 }
 
-func (getter *HTTPGetter) downloadIgnoreFiles(namesChannel chan string, contentsChannel chan contentstructs.RetrievedContents) {
+func (getter *HTTPGetter) downloadIgnoreFiles(namesChannel chan string, contentsChannel chan contentstructs.NamedIgnoreContents, failedSourceChannel chan errors.FailedSource) {
 	for name := range namesChannel {
-		go getter.downloadIgnoreFile(name, contentsChannel)
+		go getter.downloadIgnoreFile(name, contentsChannel, failedSourceChannel)
 	}
 }
 
-func (getter *HTTPGetter) downloadIgnoreFile(name string, contentsChannel chan contentstructs.RetrievedContents) {
+func (getter *HTTPGetter) downloadIgnoreFile(name string, contentsChannel chan contentstructs.NamedIgnoreContents, failedSourceChannel chan errors.FailedSource) {
 	url := getter.nameToURL(name)
 	log.Println("Retrieving", url)
 	response, err := http.Get(url)
 	contents, err := getter.processResponse(response, err)
-	contentsChannel <- contentstructs.RetrievedContents{name, url, contents, err}
+	if err != nil {
+		failedSourceChannel <- errors.FailedSource{url, err}
+	} else {
+		contentsChannel <- contentstructs.NamedIgnoreContents{name, contents}
+	}
 }
 
 func (getter *HTTPGetter) nameToURL(name string) string {
@@ -96,26 +106,20 @@ func (getter *HTTPGetter) processResponse(response *http.Response, err error) (c
 	return
 }
 
-type contentsAndError struct {
-	Contents []contentstructs.NamedIgnoreContents
-	Err      error
-}
-
-func processContents(contentsChannel chan contentstructs.RetrievedContents, outputChannel chan contentsAndError, jobsProcessing *sync.WaitGroup) {
+func processContents(contentsChannel chan contentstructs.NamedIgnoreContents, outputChannel chan []contentstructs.NamedIgnoreContents, jobsProcessing *sync.WaitGroup) {
 	var allRetrievedContents []contentstructs.NamedIgnoreContents
-	var err error
-	failedSources := new(errors.FailedSources)
 	for retrievedContents := range contentsChannel {
-		if retrievedContents.Err != nil {
-			failedSource := &errors.FailedSource{retrievedContents.Source, retrievedContents.Err}
-			failedSources.Add(failedSource)
-		} else {
-			allRetrievedContents = append(allRetrievedContents, contentstructs.NamedIgnoreContents{retrievedContents.Name, retrievedContents.Contents})
-		}
+		allRetrievedContents = append(allRetrievedContents, contentstructs.NamedIgnoreContents{retrievedContents.Name, retrievedContents.Contents})
 		jobsProcessing.Done()
 	}
-	if len(failedSources.Sources) > 0 {
-		err = failedSources
+	outputChannel <- allRetrievedContents
+}
+
+func processErrors(failedSourceChannel chan errors.FailedSource, collectedErrorsChannel chan errors.FailedSources, jobsProcessing *sync.WaitGroup) {
+	var failedSources errors.FailedSources
+	for failedSource := range failedSourceChannel {
+		failedSources = append(failedSources, failedSource)
+		jobsProcessing.Done()
 	}
-	outputChannel <- contentsAndError{Contents: allRetrievedContents, Err: err}
+	collectedErrorsChannel <- failedSources
 }
