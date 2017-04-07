@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gotgenes/getignore/contentstructs"
 	"github.com/gotgenes/getignore/testutils"
 )
 
@@ -27,21 +26,4 @@ func TestParseNamesFileStripsSpaces(t *testing.T) {
 	names := ParseNamesFile(namesFile)
 	expectedNames := []string{"Global/Vim", "Python"}
 	testutils.AssertDeepEqual(t, names, expectedNames)
-}
-
-func TestNamedIgnoreContentsDisplayName(t *testing.T) {
-	nics := []contentstructs.NamedIgnoreContents{
-		{Name: "Vim", Contents: "*.swp"},
-		{Name: "Global/Vim", Contents: "*.swp"},
-		{Name: "Vim.gitignore", Contents: "*.swp"},
-		{Name: "Vim.patterns", Contents: "*.swp"},
-		{Name: "Global/Vim.gitignore", Contents: "*.swp"},
-	}
-	expectedDisplayName := "Vim"
-	for _, nic := range nics {
-		displayName := nic.DisplayName()
-		if displayName != expectedDisplayName {
-			testutils.TError(t, displayName, expectedDisplayName)
-		}
-	}
 }
