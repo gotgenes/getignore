@@ -7,7 +7,7 @@ getignore bootstraps `.gitignore` files from [GitHub .gitignore patterns](https:
 
 ## Installation
 
-### Homebrew users (OS X)
+### Homebrew users (macOS / OS X)
 
 [Homebrew](http://brew.sh) users can install getignore using the following commands:
 
@@ -25,7 +25,7 @@ brew install getignore
 choco install getignore
 ```
 
-### Windows, Linux, and OS X
+### Windows, Linux, and macOS / OS X
 
 Download and unpack a pre-compiled executable from [the releases page](https://github.com/gotgenes/getignore/releases). Make sure to place the executable in your shell's `PATH`.
 
