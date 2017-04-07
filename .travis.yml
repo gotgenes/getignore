@@ -12,5 +12,5 @@ install:
   - glide install
 
 script:
-  go test -v $(glide novendor)
-  go vet $(glide novendor)
+  - go test -v $(glide novendor)
+  - go vet $(glide novendor)
