@@ -39,9 +39,9 @@ See [the Building section, below](#building).
 
 getignore supports the following commands:
 
+* [`help`](#help)
 * [`get`](#get)
 * [`list`](#list)
-* [`help`](#help)
 
 
 ### help
