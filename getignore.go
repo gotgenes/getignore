@@ -16,7 +16,7 @@ import (
 )
 
 // Version is the version of getignore
-const Version string = "0.3.0.dev0"
+const Version string = "0.3.0"
 
 func main() {
 	log.SetFlags(0)
