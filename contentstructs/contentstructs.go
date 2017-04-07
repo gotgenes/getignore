@@ -5,15 +5,6 @@ import (
 	"strings"
 )
 
-// RetrievedContents represents the result of retrieving contents of a gitignore patterns
-// file
-type RetrievedContents struct {
-	Name     string
-	Source   string
-	Contents string
-	Err      error
-}
-
 // NamedIgnoreContents represents the contents (patterns and comments) of a
 // gitignore file
 type NamedIgnoreContents struct {
