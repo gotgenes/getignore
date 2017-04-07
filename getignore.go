@@ -7,12 +7,9 @@ import (
 	"log"
 	"os"
 	"strings"
-	"sync"
 
 	"github.com/urfave/cli"
 
-	"github.com/gotgenes/getignore/contentstructs"
-	"github.com/gotgenes/getignore/errors"
 	"github.com/gotgenes/getignore/getters"
 	"github.com/gotgenes/getignore/list"
 	"github.com/gotgenes/getignore/writers"
@@ -42,38 +39,6 @@ func ParseNamesFile(namesFile io.Reader) []string {
 		}
 	}
 	return a
-}
-
-// CreateNamesOrdering creates a mapping of each name to its respective input position
-func CreateNamesOrdering(names []string) map[string]int {
-	namesOrdering := make(map[string]int)
-	for i, name := range names {
-		namesOrdering[name] = i
-	}
-	return namesOrdering
-}
-
-func processContents(contentsChannel chan contentstructs.RetrievedContents, namesOrdering map[string]int) ([]contentstructs.NamedIgnoreContents, error) {
-	allRetrievedContents := make([]contentstructs.NamedIgnoreContents, len(namesOrdering))
-	var err error
-	failedSources := new(errors.FailedSources)
-	for retrievedContents := range contentsChannel {
-		if retrievedContents.Err != nil {
-			failedSource := &errors.FailedSource{retrievedContents.Source, retrievedContents.Err}
-			failedSources.Add(failedSource)
-		} else {
-			name := retrievedContents.Name
-			position, present := namesOrdering[name]
-			if !present {
-				return allRetrievedContents, fmt.Errorf("Could not find name %s in ordering", name)
-			}
-			allRetrievedContents[position] = contentstructs.NamedIgnoreContents{name, retrievedContents.Contents}
-		}
-	}
-	if len(failedSources.Sources) > 0 {
-		err = failedSources
-	}
-	return allRetrievedContents, err
 }
 
 func getOutputFile(context *cli.Context) (outputFilePath string, outputFile io.Writer, err error) {
@@ -150,14 +115,8 @@ func creatCLI() *cli.App {
 
 func downloadAllIgnoreFiles(context *cli.Context) error {
 	names := getNamesFromArguments(context)
-	namesOrdering := CreateNamesOrdering(names)
 	getter := getters.HTTPGetter{context.String("base-url"), context.String("default-extension"), context.Int("max-connections")}
-	contentsChannel := make(chan contentstructs.RetrievedContents, context.Int("max-connections"))
-	var requestsPending sync.WaitGroup
-	getter.GetIgnoreFiles(names, contentsChannel, &requestsPending)
-	requestsPending.Wait()
-	close(contentsChannel)
-	contents, err := processContents(contentsChannel, namesOrdering)
+	contents, err := getter.GetIgnoreFiles(names)
 	if err != nil {
 		return err
 	}
