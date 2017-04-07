@@ -41,15 +41,6 @@ func ParseNamesFile(namesFile io.Reader) []string {
 	return a
 }
 
-// CreateNamesOrdering creates a mapping of each name to its respective input position
-func CreateNamesOrdering(names []string) map[string]int {
-	namesOrdering := make(map[string]int)
-	for i, name := range names {
-		namesOrdering[name] = i
-	}
-	return namesOrdering
-}
-
 func getOutputFile(context *cli.Context) (outputFilePath string, outputFile io.Writer, err error) {
 	outputFilePath = context.String("o")
 	if outputFilePath == "" {

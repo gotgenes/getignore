@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"sort"
 	"sync"
 
 	"github.com/gotgenes/getignore/contentstructs"
@@ -30,10 +31,12 @@ func (getter *HTTPGetter) GetIgnoreFiles(names []string) (contents []contentstru
 	errorsChannel := make(chan errors.FailedSource)
 	namedContentsChannel := make(chan []contentstructs.NamedIgnoreContents)
 	failedSourcesChannel := make(chan errors.FailedSources)
+
+	namesOrdering := createNamesOrdering(names)
 	var jobsProcessing sync.WaitGroup
 	jobsProcessing.Add(len(names))
 	go getter.downloadIgnoreFiles(namesChannel, contentsChannel, errorsChannel)
-	go processContents(contentsChannel, namedContentsChannel, &jobsProcessing)
+	go processContents(contentsChannel, namesOrdering, namedContentsChannel, &jobsProcessing)
 	go processErrors(errorsChannel, failedSourcesChannel, &jobsProcessing)
 	for _, name := range names {
 		namesChannel <- name
@@ -48,6 +51,14 @@ func (getter *HTTPGetter) GetIgnoreFiles(names []string) (contents []contentstru
 		err = failedSources
 	}
 	return
+}
+
+func createNamesOrdering(names []string) map[string]int {
+	namesOrdering := make(map[string]int)
+	for i, name := range names {
+		namesOrdering[name] = i
+	}
+	return namesOrdering
 }
 
 func (getter *HTTPGetter) downloadIgnoreFiles(namesChannel chan string, contentsChannel chan contentstructs.NamedIgnoreContents, failedSourceChannel chan errors.FailedSource) {
@@ -106,13 +117,33 @@ func (getter *HTTPGetter) processResponse(response *http.Response, err error) (c
 	return
 }
 
-func processContents(contentsChannel chan contentstructs.NamedIgnoreContents, outputChannel chan []contentstructs.NamedIgnoreContents, jobsProcessing *sync.WaitGroup) {
+func processContents(contentsChannel chan contentstructs.NamedIgnoreContents, namesOrdering map[string]int, outputChannel chan []contentstructs.NamedIgnoreContents, jobsProcessing *sync.WaitGroup) {
 	var allRetrievedContents []contentstructs.NamedIgnoreContents
 	for retrievedContents := range contentsChannel {
-		allRetrievedContents = append(allRetrievedContents, contentstructs.NamedIgnoreContents{retrievedContents.Name, retrievedContents.Contents})
+		allRetrievedContents = append(
+			allRetrievedContents,
+			contentstructs.NamedIgnoreContents{Name: retrievedContents.Name, Contents: retrievedContents.Contents})
 		jobsProcessing.Done()
 	}
+	sort.Sort(&contentsWithOrdering{contents: allRetrievedContents, ordering: namesOrdering})
 	outputChannel <- allRetrievedContents
+}
+
+type contentsWithOrdering struct {
+	contents []contentstructs.NamedIgnoreContents
+	ordering map[string]int
+}
+
+func (cwo *contentsWithOrdering) Len() int {
+	return len(cwo.contents)
+}
+
+func (cwo *contentsWithOrdering) Swap(i, j int) {
+	cwo.contents[i], cwo.contents[j] = cwo.contents[j], cwo.contents[i]
+}
+
+func (cwo *contentsWithOrdering) Less(i, j int) bool {
+	return cwo.ordering[cwo.contents[i].Name] < cwo.ordering[cwo.contents[j].Name]
 }
 
 func processErrors(failedSourceChannel chan errors.FailedSource, collectedErrorsChannel chan errors.FailedSources, jobsProcessing *sync.WaitGroup) {
