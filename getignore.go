@@ -18,38 +18,10 @@ import (
 // Version is the version of getignore
 const Version string = "0.3.0.dev0"
 
-func getNamesFromArguments(context *cli.Context) []string {
-	names := context.Args()
-
-	if context.String("names-file") != "" {
-		namesFile, _ := os.Open(context.String("names-file"))
-		names = append(names, ParseNamesFile(namesFile)...)
-	}
-	return names
-}
-
-// ParseNamesFile reads a file containing one name of a gitignore patterns file per line
-func ParseNamesFile(namesFile io.Reader) []string {
-	var a []string
-	scanner := bufio.NewScanner(namesFile)
-	for scanner.Scan() {
-		name := strings.TrimSpace(scanner.Text())
-		if len(name) > 0 {
-			a = append(a, name)
-		}
-	}
-	return a
-}
-
-func getOutputFile(context *cli.Context) (outputFilePath string, outputFile io.Writer, err error) {
-	outputFilePath = context.String("o")
-	if outputFilePath == "" {
-		outputFilePath = "STDOUT"
-		outputFile = os.Stdout
-	} else {
-		outputFile, err = os.Create(outputFilePath)
-	}
-	return
+func main() {
+	log.SetFlags(0)
+	app := creatCLI()
+	app.RunAndExitOnError()
 }
 
 func creatCLI() *cli.App {
@@ -136,6 +108,40 @@ func downloadAllIgnoreFiles(context *cli.Context) error {
 	return err
 }
 
+func getNamesFromArguments(context *cli.Context) []string {
+	names := context.Args()
+
+	if context.String("names-file") != "" {
+		namesFile, _ := os.Open(context.String("names-file"))
+		names = append(names, ParseNamesFile(namesFile)...)
+	}
+	return names
+}
+
+// ParseNamesFile reads a file containing one name of a gitignore patterns file per line
+func ParseNamesFile(namesFile io.Reader) []string {
+	var a []string
+	scanner := bufio.NewScanner(namesFile)
+	for scanner.Scan() {
+		name := strings.TrimSpace(scanner.Text())
+		if len(name) > 0 {
+			a = append(a, name)
+		}
+	}
+	return a
+}
+
+func getOutputFile(context *cli.Context) (outputFilePath string, outputFile io.Writer, err error) {
+	outputFilePath = context.String("o")
+	if outputFilePath == "" {
+		outputFilePath = "STDOUT"
+		outputFile = os.Stdout
+	} else {
+		outputFile, err = os.Create(outputFilePath)
+	}
+	return
+}
+
 func listIgnoreFiles(context *cli.Context) error {
 	outputString, err := list.ListIgnoreFiles(context.String("api-url"), Version, context.String("suffix"))
 	if err != nil {
@@ -143,10 +149,4 @@ func listIgnoreFiles(context *cli.Context) error {
 	}
 	_, err = fmt.Println(outputString)
 	return err
-}
-
-func main() {
-	log.SetFlags(0)
-	app := creatCLI()
-	app.RunAndExitOnError()
 }
