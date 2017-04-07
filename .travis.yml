@@ -13,3 +13,4 @@ install:
 
 script:
   go test -v $(glide novendor)
+  go vet $(glide novendor)

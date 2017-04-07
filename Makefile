@@ -1,5 +1,6 @@
 DIST_DIRS := find dist -type d -execdir
 VERSION := $(shell git describe --tags)
+PACKAGES := $(shell glide novendor)
 
 build:
 	go build
@@ -8,7 +9,8 @@ install:
 	go install
 
 test:
-	go test -v .
+	go test $(PACKAGES)
+	go vet $(PACKAGES)
 
 clean:
 	rm -f ./getignore
