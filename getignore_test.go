@@ -31,11 +31,11 @@ func TestParseNamesFileStripsSpaces(t *testing.T) {
 
 func TestNamedIgnoreContentsDisplayName(t *testing.T) {
 	nics := []contentstructs.NamedIgnoreContents{
-		{"Vim", "*.swp"},
-		{"Global/Vim", "*.swp"},
-		{"Vim.gitignore", "*.swp"},
-		{"Vim.patterns", "*.swp"},
-		{"Global/Vim.gitignore", "*.swp"},
+		{Name: "Vim", Contents: "*.swp"},
+		{Name: "Global/Vim", Contents: "*.swp"},
+		{Name: "Vim.gitignore", Contents: "*.swp"},
+		{Name: "Vim.patterns", Contents: "*.swp"},
+		{Name: "Global/Vim.gitignore", Contents: "*.swp"},
 	}
 	expectedDisplayName := "Vim"
 	for _, nic := range nics {

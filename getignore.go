@@ -115,7 +115,11 @@ func creatCLI() *cli.App {
 
 func downloadAllIgnoreFiles(context *cli.Context) error {
 	names := getNamesFromArguments(context)
-	getter := getters.HTTPGetter{context.String("base-url"), context.String("default-extension"), context.Int("max-connections")}
+	getter := getters.HTTPGetter{
+		BaseURL:          context.String("base-url"),
+		DefaultExtension: context.String("default-extension"),
+		MaxConnections:   context.Int("max-connections"),
+	}
 	contents, err := getter.GetIgnoreFiles(names)
 	if err != nil {
 		return err
