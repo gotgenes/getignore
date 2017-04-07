@@ -1,4 +1,4 @@
-DIST_DIRS := find dist -type d -execdir
+DIST_DIRS := find dist -depth 1 -type d -execdir
 VERSION := $(shell git describe --tags)
 PACKAGES := $(shell glide novendor)
 
@@ -22,7 +22,7 @@ build-all:
 	-output="dist/getignore-${VERSION}-{{.OS}}-{{.Arch}}/{{.Dir}}" .
 
 dist: build-all
-	$(DIST_DIRS) cp LICENSE README.md {} \; && \
+	$(DIST_DIRS) cp ../LICENSE ../README.md {} \; && \
 	$(DIST_DIRS) tar -zcf {}.tar.gz {} \; && \
 	$(DIST_DIRS) zip -r {}.zip {} \;
 
