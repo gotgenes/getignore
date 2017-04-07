@@ -20,8 +20,8 @@ func TestGetIgnoreFilesForNameOnly(t *testing.T) {
 		[]string{"Global/Vim"},
 		[]contentstructs.NamedIgnoreContents{
 			{
-				"Global/Vim",
-				".*.swp\nSession.vim\n",
+				Name:     "Global/Vim",
+				Contents: ".*.swp\nSession.vim\n",
 			},
 		},
 		nil,
@@ -37,8 +37,8 @@ func TestGetIgnoreFilesWithDefaultExtension(t *testing.T) {
 		[]string{"Global/Vim.gitignore"},
 		[]contentstructs.NamedIgnoreContents{
 			{
-				"Global/Vim.gitignore",
-				".*.swp\nSession.vim\n",
+				Name:     "Global/Vim.gitignore",
+				Contents: ".*.swp\nSession.vim\n",
 			},
 		},
 		nil,
@@ -54,8 +54,8 @@ func TestGetIgnoreFilesWithDifferentExtension(t *testing.T) {
 		[]string{"Foo.bar"},
 		[]contentstructs.NamedIgnoreContents{
 			{
-				"Foo.bar",
-				"abc\nxyz\n",
+				Name:     "Foo.bar",
+				Contents: "abc\nxyz\n",
 			},
 		},
 		nil,

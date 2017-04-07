@@ -73,9 +73,9 @@ func (getter *HTTPGetter) downloadIgnoreFile(name string, contentsChannel chan c
 	response, err := http.Get(url)
 	contents, err := getter.processResponse(response, err)
 	if err != nil {
-		failedSourceChannel <- errors.FailedSource{url, err}
+		failedSourceChannel <- errors.FailedSource{Source: url, Err: err}
 	} else {
-		contentsChannel <- contentstructs.NamedIgnoreContents{name, contents}
+		contentsChannel <- contentstructs.NamedIgnoreContents{Name: name, Contents: contents}
 	}
 }
 

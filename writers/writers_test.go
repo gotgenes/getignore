@@ -11,8 +11,8 @@ import (
 func TestWriteIgnoreFile(t *testing.T) {
 	ignoreFile := bytes.NewBufferString("")
 	responseContents := []contentstructs.NamedIgnoreContents{
-		{"Global/Vim", ".*.swp\ntags\n"},
-		{"Go.gitignore", "*.o\n*.exe\n"},
+		{Name: "Global/Vim", Contents: ".*.swp\ntags\n"},
+		{Name: "Go.gitignore", Contents: "*.o\n*.exe\n"},
 	}
 	WriteIgnoreFile(ignoreFile, responseContents)
 	ignoreFileContents := ignoreFile.String()
