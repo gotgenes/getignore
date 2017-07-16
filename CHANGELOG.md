@@ -1,8 +1,8 @@
-# Change Log
+# Changelog
 
 ## Unreleased
 
-### Added
+### Changed
 
 * Tests now depend on [testify](https://github.com/stretchr/testify).
 
@@ -15,7 +15,7 @@
 * Empty lines before and after patterns in the retrieved file contents are now stripped, making line spacing consistent.
 
 
-## 0.3.0 2017-04-07
+## 0.3.0 - 2017-04-07
 
 ### Added
 
@@ -37,7 +37,7 @@
 * Fixed an issue where `getignore get` would deadlock if the number of files requested exceeded the maximum number of connections. (See issue #3.)
 
 
-## 0.2.0 2016-12-28
+## 0.2.0 - 2016-12-28
 
 ### Added
 
@@ -49,6 +49,6 @@
 * Reorganized code into separate packages.
 
 
-## 0.1.0 2016-11-17
+## 0.1.0 - 2016-11-17
 
 Initial release.
