@@ -18,6 +18,9 @@ func WriteIgnoreFile(ignoreFile io.Writer, contents []contentstructs.NamedIgnore
 		}
 		writer.WriteString(decorateName(nc.DisplayName()))
 		writer.WriteString(nc.Contents)
+		if !strings.HasSuffix(nc.Contents, "\n") {
+			writer.WriteString("\n")
+		}
 	}
 	if writer.Flush() != nil {
 		err = writer.Flush()
