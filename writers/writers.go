@@ -10,16 +10,16 @@ import (
 )
 
 // WriteIgnoreFile writes contents to a gitignore file
-func WriteIgnoreFile(ignoreFile io.Writer, contents []contentstructs.NamedIgnoreContents) (err error) {
+func WriteIgnoreFile(ignoreFile io.Writer, allContents []contentstructs.NamedIgnoreContents) (err error) {
 	writer := bufio.NewWriter(ignoreFile)
-	for i, nc := range contents {
+	for i, nc := range allContents {
 		if i > 0 {
 			writer.WriteString("\n\n")
 		}
 		writer.WriteString(decorateName(nc.DisplayName()))
-		writer.WriteString(nc.Contents)
-		if !strings.HasSuffix(nc.Contents, "\n") {
-			writer.WriteString("\n")
+		contents := strings.TrimSpace(nc.Contents)
+		if contents != "" {
+			writer.WriteString(contents + "\n")
 		}
 	}
 	if writer.Flush() != nil {
