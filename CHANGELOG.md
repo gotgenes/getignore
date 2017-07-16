@@ -1,5 +1,20 @@
 # Change Log
 
+## Unreleased
+
+### Added
+
+* Tests now depend on [testify](https://github.com/stretchr/testify).
+
+### Removed
+
+* `testutils` module replaced by [testify](https://github.com/stretchr/testify).
+
+### Fixed
+
+* Empty lines before and after patterns in the retrieved file contents are now stripped, making line spacing consistent.
+
+
 ## 0.3.0 2017-04-07
 
 ### Added
@@ -10,7 +25,7 @@
 ### Changed
 
 * Changed the API for `HTTPGetter.GetIgnoreFiles` to take an array of names and return an array of `contentstructs.NamedIgnoreContents` and an `error`. Previously this took a channel as input, on which it sent the results. Channels have been moved internal to the `GetIgnoreFiles` method.
-* Updated dependency on [urfave/cli](https://github.com/urfave/cli).
+* Updated dependency on [cli](https://github.com/urfave/cli).
 * Updated the minimum Go version to build to 1.8.
 
 ### Removed
