@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gotgenes/getignore/testutils"
+	"github.com/stretchr/testify/assert"
 )
 
 const contentsBodyTemplate = `{
@@ -88,14 +88,14 @@ func assertReturnsExpectedFileNames(t *testing.T, treeContents string, expectedF
 	contents := fmt.Sprintf(contentsBodyTemplate, treeContents)
 	responseBody := strings.NewReader(contents)
 	fileNames, _ := parseGitTreeToFileNames(responseBody)
-	testutils.AssertDeepEqual(t, fileNames, expectedFileNames)
+	assert.Equal(t, expectedFileNames, fileNames)
 }
 
 func assertReturnsError(t *testing.T, treeContents string, expectedErrorMessage string) {
 	contents := fmt.Sprintf(contentsBodyTemplate, treeContents)
 	responseBody := strings.NewReader(contents)
 	_, err := parseGitTreeToFileNames(responseBody)
-	testutils.AssertDeepEqual(t, err.Error(), expectedErrorMessage)
+	assert.EqualError(t, err, expectedErrorMessage)
 }
 
 func TestFilterBySuffix(t *testing.T) {
@@ -113,5 +113,5 @@ func TestFilterBySuffix(t *testing.T) {
 }
 
 func assertReturnsFilteredFileNames(t *testing.T, fileNames []string, suffix string, expectedFileNames []string) {
-	testutils.AssertDeepEqual(t, filterBySuffix(fileNames, suffix), expectedFileNames)
+	assert.Equal(t, expectedFileNames, filterBySuffix(fileNames, suffix))
 }

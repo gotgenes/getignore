@@ -3,7 +3,7 @@ package contentstructs
 import (
 	"testing"
 
-	"github.com/gotgenes/getignore/testutils"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNamedIgnoreContentsDisplayName(t *testing.T) {
@@ -14,11 +14,8 @@ func TestNamedIgnoreContentsDisplayName(t *testing.T) {
 		{Name: "Vim.patterns", Contents: "*.swp"},
 		{Name: "Global/Vim.gitignore", Contents: "*.swp"},
 	}
-	expectedDisplayName := "Vim"
 	for _, nic := range nics {
 		displayName := nic.DisplayName()
-		if displayName != expectedDisplayName {
-			testutils.TError(t, displayName, expectedDisplayName)
-		}
+		assert.Equal(t, "Vim", displayName)
 	}
 }

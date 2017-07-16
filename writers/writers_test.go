@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/gotgenes/getignore/contentstructs"
-	"github.com/gotgenes/getignore/testutils"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestWriteIgnoreFile(t *testing.T) {
@@ -30,7 +30,7 @@ tags
 *.exe
 `
 	if ignoreFileContents != expectedContents {
-		testutils.TError(t, ignoreFileContents, expectedContents)
+		assert.Equal(t, expectedContents, ignoreFileContents)
 	}
 }
 
@@ -56,6 +56,6 @@ tags
 *.exe
 `
 	if ignoreFileContents != expectedContents {
-		testutils.TError(t, ignoreFileContents, expectedContents)
+		assert.Equal(t, expectedContents, ignoreFileContents)
 	}
 }

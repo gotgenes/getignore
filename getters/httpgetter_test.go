@@ -8,7 +8,7 @@ import (
 
 	"github.com/gotgenes/getignore/contentstructs"
 	"github.com/gotgenes/getignore/errors"
-	"github.com/gotgenes/getignore/testutils"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetIgnoreFilesForNameOnly(t *testing.T) {
@@ -110,8 +110,8 @@ func TestGetIgnoreFilesContentsInExpectedOrder(t *testing.T) {
 	responseGates["Go.gitignore"] <- true
 	responseGates["Foo.bar"] <- true
 	result := <-resultChannel
-	testutils.AssertDeepEqual(t, result.Contents, expectedContents)
-	testutils.AssertDeepEqual(t, result.Err, nil)
+	assert.Equal(t, expectedContents, result.Contents)
+	assert.NoError(t, result.Err)
 }
 
 func assertGetIgnoreFilesReturnsExpectedContents(t *testing.T, testServer *httptest.Server, names []string, expectedContents []contentstructs.NamedIgnoreContents, expectedError error) {
@@ -121,8 +121,14 @@ func assertGetIgnoreFilesReturnsExpectedContents(t *testing.T, testServer *httpt
 		1,
 	}
 	gotContents, err := getter.GetIgnoreFiles(names)
-	testutils.AssertDeepEqual(t, gotContents, expectedContents)
-	testutils.AssertDeepEqual(t, err, expectedError)
+	assert.Equal(t, expectedContents, gotContents)
+	if expectedError != nil {
+		if assert.Error(t, err) {
+			assert.Equal(t, err, expectedError)
+		}
+	} else {
+		assert.NoError(t, err)
+	}
 }
 
 var pathsToContents = map[string]string{

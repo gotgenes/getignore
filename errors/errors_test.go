@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/gotgenes/getignore/testutils"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFailedSourcesError(t *testing.T) {
@@ -22,7 +22,5 @@ func TestFailedSourcesError(t *testing.T) {
 https://raw.githubusercontent.com/github/gitignore/master/Bogus.gitignore: status code 404
 https://raw.githubusercontent.com/github/gitignore/master/Totally.gitignore: Error reading response body: too many 💩s`
 	errorStr := failedSources.Error()
-	if errorStr != expectedErrorStr {
-		testutils.TError(t, errorStr, expectedErrorStr)
-	}
+	assert.Equal(t, expectedErrorStr, errorStr)
 }

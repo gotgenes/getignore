@@ -4,26 +4,24 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gotgenes/getignore/testutils"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParseNamesFile(t *testing.T) {
-	namesFile := strings.NewReader("Global/Vim\nPython\n")
-	names := ParseNamesFile(namesFile)
-	expectedNames := []string{"Global/Vim", "Python"}
-	testutils.AssertDeepEqual(t, names, expectedNames)
+	assertReturnsExpectedNames(t, "Global/Vim\nPython\n", []string{"Global/Vim", "Python"})
 }
 
 func TestParseNamesFileIgnoresBlankLines(t *testing.T) {
-	namesFile := strings.NewReader("\nGlobal/Vim\nPython\n")
-	names := ParseNamesFile(namesFile)
-	expectedNames := []string{"Global/Vim", "Python"}
-	testutils.AssertDeepEqual(t, names, expectedNames)
+	assertReturnsExpectedNames(t, "\nGlobal/Vim\nPython\n", []string{"Global/Vim", "Python"})
 }
 
 func TestParseNamesFileStripsSpaces(t *testing.T) {
-	namesFile := strings.NewReader("Global/Vim   \n  \n   Python\n")
+	assertReturnsExpectedNames(
+		t, "Global/Vim   \n  \n   Python\n", []string{"Global/Vim", "Python"})
+}
+
+func assertReturnsExpectedNames(t *testing.T, namesFileContents string, expectedNames []string) {
+	namesFile := strings.NewReader(namesFileContents)
 	names := ParseNamesFile(namesFile)
-	expectedNames := []string{"Global/Vim", "Python"}
-	testutils.AssertDeepEqual(t, names, expectedNames)
+	assert.Equal(t, expectedNames, names)
 }
