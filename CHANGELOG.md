@@ -2,6 +2,10 @@
 
 ## 2.0.0 - TBD
 
+### Added
+
+* Added completions for Bash and zsh.
+
 ### Changed
 
 * Upgraded dependencies, including to v2 of [urfave/cli](https://github.com/urfave/cli). This is a backwards-incompatible change because [the commands will no longer accept flags after arguments](https://github.com/urfave/cli/blob/master/docs/migrate-v1-to-v2.md#flags-before-args).

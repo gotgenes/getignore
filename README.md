@@ -133,6 +133,11 @@ getignore list --suffix ''
 ```
 
 
+## Completion
+
+getignore supports completion of the command line for [Bash](completions/bash/getignore-completion.bash) and [zsh](completions/zsh/_getignore). If completions were not installed by default, please place the respective completion file in the appropriate location for completion scripts on your system.
+
+
 ## Building
 
 ```shell

@@ -29,6 +29,7 @@ func creatCLI() *cli.App {
 	app.Name = "getignore"
 	app.Version = Version
 	app.Usage = "Bootstraps gitignore files from central sources"
+	app.EnableBashCompletion = true
 
 	app.Commands = []*cli.Command{
 		{
