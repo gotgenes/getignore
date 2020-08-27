@@ -7,5 +7,4 @@ go:
 sudo: false
 
 script:
-  - go test
-  - go vet
+  - make test
