@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
 	"github.com/gotgenes/getignore/getters"
 	"github.com/gotgenes/getignore/list"
@@ -30,51 +30,57 @@ func creatCLI() *cli.App {
 	app.Version = Version
 	app.Usage = "Bootstraps gitignore files from central sources"
 
-	app.Commands = []cli.Command{
-		cli.Command{
+	app.Commands = []*cli.Command{
+		&cli.Command{
 			Name:  "get",
 			Usage: "Retrieves gitignore patterns files from a central source and concatenates them",
 			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "base-url, u",
-					Usage: "The URL under which gitignore files can be found",
-					Value: "https://raw.githubusercontent.com/github/gitignore/master",
+				&cli.StringFlag{
+					Name:    "base-url",
+					Aliases: []string{"u"},
+					Usage:   "The URL under which gitignore files can be found",
+					Value:   "https://raw.githubusercontent.com/github/gitignore/master",
 				},
-				cli.StringFlag{
-					Name:  "default-extension, e",
-					Usage: "The default file extension appended to names when retrieving them",
-					Value: ".gitignore",
+				&cli.StringFlag{
+					Name:    "default-extension",
+					Aliases: []string{"e"},
+					Usage:   "The default file extension appended to names when retrieving them",
+					Value:   ".gitignore",
 				},
-				cli.IntFlag{
+				&cli.IntFlag{
 					Name:  "max-connections",
 					Usage: "The number of maximum connections to open for HTTP requests",
 					Value: 8,
 				},
-				cli.StringFlag{
-					Name:  "names-file, n",
-					Usage: "Path to file containing names of gitignore patterns files",
+				&cli.StringFlag{
+					Name:    "names-file",
+					Aliases: []string{"n"},
+					Usage:   "Path to file containing names of gitignore patterns files",
 				},
-				cli.StringFlag{
-					Name:  "o",
-					Usage: "Path to output file (default: STDOUT)",
+				&cli.StringFlag{
+					Name:    "output-file",
+					Aliases: []string{"o"},
+					Usage:   "Path to output file (default: STDOUT)",
 				},
 			},
 			ArgsUsage: "[gitignore_name] [gitignore_name …]",
 			Action:    downloadAllIgnoreFiles,
 		},
-		cli.Command{
+		&cli.Command{
 			Name:  "list",
 			Usage: "Retrieves and prints a list of available ignore files",
 			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "api-url, u",
-					Usage: "The GitHub Tree API-compatible URL to the repository of ignore files",
-					Value: "https://api.github.com/repos/github/gitignore/git/trees/master?recursive=1",
+				&cli.StringFlag{
+					Name:    "api-url",
+					Aliases: []string{"u"},
+					Usage:   "The GitHub Tree API-compatible URL to the repository of ignore files",
+					Value:   "https://api.github.com/repos/github/gitignore/git/trees/master?recursive=1",
 				},
-				cli.StringFlag{
-					Name:  "suffix, s",
-					Usage: "The suffix to use to identify ignore files",
-					Value: ".gitignore",
+				&cli.StringFlag{
+					Name:    "suffix",
+					Aliases: []string{"s"},
+					Usage:   "The suffix to use to identify ignore files",
+					Value:   ".gitignore",
 				},
 			},
 			ArgsUsage: "",
@@ -109,7 +115,7 @@ func downloadAllIgnoreFiles(context *cli.Context) error {
 }
 
 func getNamesFromArguments(context *cli.Context) []string {
-	names := context.Args()
+	names := context.Args().Slice()
 
 	if context.String("names-file") != "" {
 		namesFile, _ := os.Open(context.String("names-file"))
