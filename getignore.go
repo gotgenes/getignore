@@ -31,7 +31,7 @@ func creatCLI() *cli.App {
 	app.Usage = "Bootstraps gitignore files from central sources"
 
 	app.Commands = []*cli.Command{
-		&cli.Command{
+		{
 			Name:  "get",
 			Usage: "Retrieves gitignore patterns files from a central source and concatenates them",
 			Flags: []cli.Flag{
@@ -66,7 +66,7 @@ func creatCLI() *cli.App {
 			ArgsUsage: "[gitignore_name] [gitignore_name …]",
 			Action:    downloadAllIgnoreFiles,
 		},
-		&cli.Command{
+		{
 			Name:  "list",
 			Usage: "Retrieves and prints a list of available ignore files",
 			Flags: []cli.Flag{
