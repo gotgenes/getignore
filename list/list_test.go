@@ -81,7 +81,7 @@ func TestParseGitTreeToFileNamesReturnsUnmarshallError(t *testing.T) {
 	assertReturnsError(
 		t,
 		`{"path": "Go.gitignore", "type": 1}`,
-		"json: cannot unmarshal number into Go struct field fileInfo.Type of type string")
+		"json: cannot unmarshal number into Go struct field fileInfo.Tree.Type of type string")
 }
 
 func assertReturnsExpectedFileNames(t *testing.T, treeContents string, expectedFileNames []string) {
