@@ -109,7 +109,7 @@ Global/macOS
 
 we can get all the patterns in this file by passing it via the `--names-file` option
 
-``` shell
+```shell
 getignore get --names-file names.txt
 ```
 
@@ -135,10 +135,12 @@ getignore list --suffix ''
 
 ## Building
 
-getignore's dependencies are managed by the [Glide package manager](https://glide.sh/). First install Glide, then build getignore.
+```shell
+make
+```
 
-``` shell
-curl https://glide.sh/get | sh
-glide install
-go build
+## Testing
+
+```shell
+make test
 ```

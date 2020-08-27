@@ -1,16 +1,11 @@
 language: go
 
 go:
-  - 1.8
+  - 1.15
   - master
 
 sudo: false
 
-install:
-  - go get -v github.com/Masterminds/glide
-  - pushd $GOPATH/src/github.com/Masterminds/glide && git checkout tags/v0.12.3 && go install && popd
-  - glide install
-
 script:
-  - go test -v $(glide novendor)
-  - go vet $(glide novendor)
+  - go test
+  - go vet
