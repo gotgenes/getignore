@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.0 - TBD
+
+### Changed
+
+* Upgraded dependencies, including to v2 of [urfave/cli](https://github.com/urfave/cli). This is a backwards-incompatible change because [the commands will no longer accept flags after arguments](https://github.com/urfave/cli/blob/master/docs/migrate-v1-to-v2.md#flags-before-args).
+* Switched to using `go mod` to manage dependencies, dropping the dependency on [glide](https://glide.sh/).
+
+
 ## 1.0.0 - 2017-07-16
 
 ### Changed
