@@ -1,5 +1,5 @@
 DIST_DIRS := find dist -depth 1 -type d -execdir
-VERSION := $(shell git describe --tags)
+VERSION := $(patsubst v%,%,$(shell git describe --tags))
 PACKAGES := $(shell glide novendor)
 
 build:
