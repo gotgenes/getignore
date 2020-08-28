@@ -22,7 +22,7 @@ build-all:
 	-output="dist/getignore-${VERSION}-{{.OS}}-{{.Arch}}/{{.Dir}}" .
 
 dist: build-all
-	$(DIST_DIRS) cp ../LICENSE ../README.md {} \; && \
+	$(DIST_DIRS) cp -r ../LICENSE ../README.md ../completions {} \; && \
 	$(DIST_DIRS) tar -zcf {}.tar.gz {} \; && \
 	$(DIST_DIRS) zip -r {}.zip {} \;
 
