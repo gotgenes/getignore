@@ -17,8 +17,8 @@ clean:
 	rm -rf ./dist
 
 build-all:
-	gox -os="linux darwin windows" \
-	-arch="386 amd64" \
+	gox \
+	-osarch="darwin/amd64 linux/386 linux/amd64 linux/arm linux/arm64 windows/amd64" \
 	-output="dist/getignore-${VERSION}-{{.OS}}-{{.Arch}}/{{.Dir}}" .
 
 dist: build-all
