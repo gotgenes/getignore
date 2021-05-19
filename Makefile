@@ -8,8 +8,8 @@ install:
 	go install
 
 test:
-	go test ./...
 	go vet ./...
+	go test -vet=off ./...
 
 clean:
 	rm -f ./getignore
