@@ -17,7 +17,7 @@ clean:
 
 build-all:
 	gox \
-	-osarch="darwin/amd64 linux/386 linux/amd64 linux/arm linux/arm64 windows/amd64" \
+	-osarch="darwin/amd64 darwin/arm64 linux/386 linux/amd64 linux/arm linux/arm64 windows/amd64" \
 	-output="dist/getignore-${VERSION}-{{.OS}}-{{.Arch}}/{{.Dir}}" .
 
 dist: build-all
