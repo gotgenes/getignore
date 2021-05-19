@@ -2,7 +2,7 @@
 
 getignore bootstraps `.gitignore` files from [GitHub .gitignore patterns](https://github.com/github/gitignore).
 
-[![Travis CI Build Status](https://travis-ci.org/gotgenes/getignore.svg?branch=master)](https://travis-ci.org/gotgenes/getignore)
+[![CI workflow status](https://github.com/gotgenes/getignore/actions/workflows/ci.yaml/badge.svg)](https://github.com/gotgenes/getignore/actions/workflows/ci.yaml)
 
 
 ## Installation
