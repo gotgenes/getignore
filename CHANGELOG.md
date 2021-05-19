@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.1.0 - TBD
+
+### Added
+
+* Added builds for macOS ARM64 (Apple Silicon)
+* Added GitHub Actions for CI.
+
+### Removed
+
+* Removed Travis CI integration.
+
+### Changed
+
+* Upgraded dependencies.
+
+
 ## 2.0.0 - 2020-08-28
 
 ### Added
