@@ -15,8 +15,10 @@ import (
 	"github.com/gotgenes/getignore/writers"
 )
 
-// Version is the version of getignore
-const Version string = "2.0.0"
+// Version is the version of getignore.
+// It should be populated through ldflags, e.g.,
+// -ldflags "-X main.Version=${VERSION}"
+var Version string
 
 func main() {
 	log.SetFlags(0)
