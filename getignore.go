@@ -11,14 +11,10 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/gotgenes/getignore/getters"
+	"github.com/gotgenes/getignore/identifiers"
 	"github.com/gotgenes/getignore/list"
 	"github.com/gotgenes/getignore/writers"
 )
-
-// Version is the version of getignore.
-// It should be populated through ldflags, e.g.,
-// -ldflags "-X main.Version=${VERSION}"
-var Version string
 
 func main() {
 	log.SetFlags(0)
@@ -29,7 +25,7 @@ func main() {
 func creatCLI() *cli.App {
 	app := cli.NewApp()
 	app.Name = "getignore"
-	app.Version = Version
+	app.Version = identifiers.Version
 	app.Usage = "Bootstraps gitignore files from central sources"
 	app.EnableBashCompletion = true
 
@@ -152,7 +148,7 @@ func getOutputFile(context *cli.Context) (outputFilePath string, outputFile io.W
 }
 
 func listIgnoreFiles(context *cli.Context) error {
-	outputString, err := list.ListIgnoreFiles(context.String("api-url"), Version, context.String("suffix"))
+	outputString, err := list.ListIgnoreFiles(context.String("api-url"), identifiers.Version, context.String("suffix"))
 	if err != nil {
 		return err
 	}

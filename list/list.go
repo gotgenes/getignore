@@ -7,10 +7,35 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/gotgenes/getignore/identifiers"
 )
 
 const userAgentTemplate = "getignore/%s"
 const acceptType string = "application/vnd.github.v3+json"
+
+// GitHubLister lists ignore files using the GitHub tree API.
+type GitHubLister struct {
+	client     http.Client
+	treeAPIURL string
+}
+
+// NewGitHubLister returns a struct for listing ignore files using the GitHub tree API.
+func NewGitHubLister(client http.Client, treeAPIURL string) GitHubLister {
+	return GitHubLister{client: client, treeAPIURL: treeAPIURL}
+}
+
+// List returns an array of ignore files filtered by the provided suffix.
+// Passing an empty string for suffix will return all files, with no filtering.
+func (l GitHubLister) List(suffix string) ([]string, error) {
+	request, err := http.NewRequest("GET", l.treeAPIURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	setRequestHeaders(request, identifiers.UserAgentString)
+	l.client.Do(request)
+	return nil, nil
+}
 
 // ListIgnoreFiles downloads a list of ignore files and returns them as a
 // newline-delimited string.  The function assumes the URL points to the GitHub

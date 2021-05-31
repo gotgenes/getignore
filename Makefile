@@ -1,6 +1,6 @@
 DIST_DIRS := find dist -depth 1 -type d -execdir
 VERSION := $(patsubst v%,%,$(shell git describe --tags))
-LDFLAGS := -ldflags "-X main.Version=${VERSION}"
+LDFLAGS := -ldflags "-X 'github.com/gotgenes/getignore/constants.Version=${VERSION}'"
 
 build:
 	go build ${LDFLAGS}
@@ -10,7 +10,7 @@ install:
 
 test:
 	go vet ./...
-	go test -vet=off ${LDFLAGS} ./...
+	ginkgo -r ${LDFLAGS}
 
 tag:
 	git tag -a -m "Release $(version)" v$(version)
