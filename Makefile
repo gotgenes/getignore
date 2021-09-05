@@ -12,6 +12,9 @@ test:
 	go vet ./...
 	go test -vet=off ${LDFLAGS} ./...
 
+tag:
+	git tag -a -m "Release $(version)" v$(version)
+
 clean:
 	rm -f ./getignore
 	rm -rf ./dist
@@ -27,4 +30,4 @@ dist: build-all
 	$(DIST_DIRS) tar -zcf {}.tar.gz {} \; && \
 	$(DIST_DIRS) zip -r {}.zip {} \;
 
-.PHONY: build test install clean build-all dist
+.PHONY: build test install tag clean build-all dist
