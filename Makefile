@@ -6,7 +6,7 @@ build:
 	go build ${LDFLAGS}
 
 install:
-	go install
+	go install ${LDFLAGS}
 
 test:
 	go vet ./...

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.1 - 2021-09-04
+
+### Fixed
+
+* Fixed `make install` so that it includes necessary `LDFLAGS`, too.
+
 ## 2.1.0 - 2021-09-04
 
 ### Added
