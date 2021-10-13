@@ -102,6 +102,8 @@ func WithBranch(branch string) GitHubListerOption {
 // Passing an empty string for suffix will return all files, with no filtering.
 func (l GitHubLister) List(ctx context.Context, suffix string) ([]string, error) {
 	var files []string
-	_, _, err := l.client.Repositories.GetBranch(ctx, l.Organization, l.Repository, l.Branch, true)
-	return files, err
+	branch, _, _ := l.client.Repositories.GetBranch(ctx, l.Organization, l.Repository, l.Branch, true)
+	sha := branch.GetCommit().GetCommit().GetTree().GetSHA()
+	l.client.Git.GetTree(ctx, l.Organization, l.Repository, sha, true)
+	return files, nil
 }
