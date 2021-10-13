@@ -104,6 +104,9 @@ func (l GitHubLister) List(ctx context.Context, suffix string) ([]string, error)
 	var files []string
 	branch, _, _ := l.client.Repositories.GetBranch(ctx, l.Organization, l.Repository, l.Branch, true)
 	sha := branch.GetCommit().GetCommit().GetTree().GetSHA()
-	l.client.Git.GetTree(ctx, l.Organization, l.Repository, sha, true)
+	tree, _, _ := l.client.Git.GetTree(ctx, l.Organization, l.Repository, sha, true)
+	for _, entry := range tree.Entries {
+		files = append(files, entry.GetPath())
+	}
 	return files, nil
 }
