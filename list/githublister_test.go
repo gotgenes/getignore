@@ -339,5 +339,41 @@ var _ = Describe("GitHubLister", func() {
 				Expect(ignoreFiles).Should(BeNil())
 			})
 		})
+
+		When("the trees endpoint errors", func() {
+			BeforeEach(func() {
+				branchesResponseBody := `{
+  "name": "master",
+  "commit": {
+	"sha": "b0012e4930d0a8c350254a3caeedf7441ea286a3",
+	"commit": {
+	  "tree": {
+		"sha": "5adf061bdde4dd26889be1e74028b2f54aabc346"
+	  }
+	}
+  }
+}`
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/master"),
+						ghttp.RespondWith(http.StatusOK, branchesResponseBody),
+					),
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/git/trees/5adf061bdde4dd26889be1e74028b2f54aabc346"),
+						ghttp.RespondWith(http.StatusInternalServerError, `{"message": "something went wrong"}`),
+					),
+				)
+			})
+
+			It("should have an error", func() {
+				_, err := lister.List(ctx)
+				Expect(err).Should(MatchError(HavePrefix("unable to get tree information for github/gitignore at master")))
+			})
+
+			It("should not return any files", func() {
+				ignoreFiles, _ := lister.List(ctx)
+				Expect(ignoreFiles).Should(BeNil())
+			})
+		})
 	})
 })

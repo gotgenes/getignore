@@ -123,7 +123,16 @@ func (l GitHubLister) List(ctx context.Context) ([]string, error) {
 		)
 	}
 	sha := branch.GetCommit().GetCommit().GetTree().GetSHA()
-	tree, _, _ := l.client.Git.GetTree(ctx, l.Organization, l.Repository, sha, true)
+	tree, _, err := l.client.Git.GetTree(ctx, l.Organization, l.Repository, sha, true)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"unable to get tree information for %s/%s at %s: %w",
+			l.Organization,
+			l.Repository,
+			l.Branch,
+			err,
+		)
+	}
 	for _, entry := range tree.Entries {
 		if entry.GetType() == "blob" {
 			path := entry.GetPath()
