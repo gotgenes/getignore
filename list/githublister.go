@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/google/go-github/v39/github"
 	"github.com/gotgenes/getignore/identifiers"
@@ -16,6 +17,7 @@ type GitHubLister struct {
 	Organization string
 	Repository   string
 	Branch       string
+	Suffix       string
 }
 
 // gitHubListerParams holds parameters for instantiating a GitHubLister
@@ -25,15 +27,16 @@ type gitHubListerParams struct {
 	organization string
 	repository   string
 	branch       string
+	suffix       string
 }
 
 // NewGitHubLister returns a GitHubLister.
 func NewGitHubLister(options ...GitHubListerOption) (GitHubLister, error) {
 	params := &gitHubListerParams{
-		baseURL:      "https://api.github.com",
 		organization: "github",
 		repository:   "gitignore",
 		branch:       "master",
+		suffix:       ".gitignore",
 	}
 	for _, option := range options {
 		option(params)
@@ -58,6 +61,7 @@ func NewGitHubLister(options ...GitHubListerOption) (GitHubLister, error) {
 		Organization: params.organization,
 		Repository:   params.repository,
 		Branch:       params.branch,
+		Suffix:       params.suffix,
 	}, nil
 }
 
@@ -98,15 +102,24 @@ func WithBranch(branch string) GitHubListerOption {
 	}
 }
 
-// List returns an array of ignore files filtered by the provided suffix.
-// Passing an empty string for suffix will return all files, with no filtering.
-func (l GitHubLister) List(ctx context.Context, suffix string) ([]string, error) {
+// WithSuffix sets the suffix to filter ignore files for
+func WithSuffix(suffix string) GitHubListerOption {
+	return func(p *gitHubListerParams) {
+		p.suffix = suffix
+	}
+}
+
+// List returns an array of files filtered by the provided suffix.
+func (l GitHubLister) List(ctx context.Context) ([]string, error) {
 	var files []string
 	branch, _, _ := l.client.Repositories.GetBranch(ctx, l.Organization, l.Repository, l.Branch, true)
 	sha := branch.GetCommit().GetCommit().GetTree().GetSHA()
 	tree, _, _ := l.client.Git.GetTree(ctx, l.Organization, l.Repository, sha, true)
 	for _, entry := range tree.Entries {
-		files = append(files, entry.GetPath())
+		path := entry.GetPath()
+		if strings.HasSuffix(path, l.Suffix) {
+			files = append(files, path)
+		}
 	}
 	return files, nil
 }
