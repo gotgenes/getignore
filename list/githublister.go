@@ -123,6 +123,14 @@ func (l GitHubLister) List(ctx context.Context) ([]string, error) {
 		)
 	}
 	sha := branch.GetCommit().GetCommit().GetTree().GetSHA()
+	if sha == "" {
+		return nil, fmt.Errorf(
+			"no branch information received for %s/%s at %s",
+			l.Organization,
+			l.Repository,
+			l.Branch,
+		)
+	}
 	tree, _, err := l.client.Git.GetTree(ctx, l.Organization, l.Repository, sha, true)
 	if err != nil {
 		return nil, fmt.Errorf(
