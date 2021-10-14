@@ -12,31 +12,31 @@ import (
 
 // GitHubLister lists ignore files using the GitHub tree API.
 type GitHubLister struct {
-	client       *github.Client
-	BaseURL      string
-	Organization string
-	Repository   string
-	Branch       string
-	Suffix       string
+	client     *github.Client
+	BaseURL    string
+	Owner      string
+	Repository string
+	Branch     string
+	Suffix     string
 }
 
 // gitHubListerParams holds parameters for instantiating a GitHubLister
 type gitHubListerParams struct {
-	client       *http.Client
-	baseURL      string
-	organization string
-	repository   string
-	branch       string
-	suffix       string
+	client     *http.Client
+	baseURL    string
+	owner      string
+	repository string
+	branch     string
+	suffix     string
 }
 
 // NewGitHubLister returns a GitHubLister.
 func NewGitHubLister(options ...GitHubListerOption) (GitHubLister, error) {
 	params := &gitHubListerParams{
-		organization: "github",
-		repository:   "gitignore",
-		branch:       "master",
-		suffix:       ".gitignore",
+		owner:      "github",
+		repository: "gitignore",
+		branch:     "master",
+		suffix:     ".gitignore",
 	}
 	for _, option := range options {
 		option(params)
@@ -56,12 +56,12 @@ func NewGitHubLister(options ...GitHubListerOption) (GitHubLister, error) {
 	userAgentString := fmt.Sprintf(userAgentTemplate, identifiers.Version)
 	ghClient.UserAgent = userAgentString
 	return GitHubLister{
-		client:       ghClient,
-		BaseURL:      params.baseURL,
-		Organization: params.organization,
-		Repository:   params.repository,
-		Branch:       params.branch,
-		Suffix:       params.suffix,
+		client:     ghClient,
+		BaseURL:    params.baseURL,
+		Owner:      params.owner,
+		Repository: params.repository,
+		Branch:     params.branch,
+		Suffix:     params.suffix,
 	}, nil
 }
 
@@ -81,10 +81,10 @@ func WithBaseURL(baseURL string) GitHubListerOption {
 	}
 }
 
-// WithOrganization sets the organization or user name for the GitHubLister
-func WithOrganization(organization string) GitHubListerOption {
+// WithOwner sets the owner or organization name for the GitHubLister
+func WithOwner(owner string) GitHubListerOption {
 	return func(p *gitHubListerParams) {
-		p.organization = organization
+		p.owner = owner
 	}
 }
 
@@ -112,11 +112,11 @@ func WithSuffix(suffix string) GitHubListerOption {
 // List returns an array of files filtered by the provided suffix.
 func (l GitHubLister) List(ctx context.Context) ([]string, error) {
 	var files []string
-	branch, _, err := l.client.Repositories.GetBranch(ctx, l.Organization, l.Repository, l.Branch, true)
+	branch, _, err := l.client.Repositories.GetBranch(ctx, l.Owner, l.Repository, l.Branch, true)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"unable to get branch information for %s/%s at %s: %w",
-			l.Organization,
+			l.Owner,
 			l.Repository,
 			l.Branch,
 			err,
@@ -126,16 +126,16 @@ func (l GitHubLister) List(ctx context.Context) ([]string, error) {
 	if sha == "" {
 		return nil, fmt.Errorf(
 			"no branch information received for %s/%s at %s",
-			l.Organization,
+			l.Owner,
 			l.Repository,
 			l.Branch,
 		)
 	}
-	tree, _, err := l.client.Git.GetTree(ctx, l.Organization, l.Repository, sha, true)
+	tree, _, err := l.client.Git.GetTree(ctx, l.Owner, l.Repository, sha, true)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"unable to get tree information for %s/%s at %s: %w",
-			l.Organization,
+			l.Owner,
 			l.Repository,
 			l.Branch,
 			err,
