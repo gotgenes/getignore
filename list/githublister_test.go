@@ -317,4 +317,27 @@ var _ = Describe("GitHubLister", func() {
 			})
 		})
 	})
+
+	Context("server errors", func() {
+		When("the branches endpoint errors", func() {
+			BeforeEach(func() {
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/master"),
+						ghttp.RespondWith(http.StatusInternalServerError, `{"message": "something went wrong"}`),
+					),
+				)
+			})
+
+			It("should have an error", func() {
+				_, err := lister.List(ctx)
+				Expect(err).Should(MatchError(HavePrefix("unable to get branch information for github/gitignore at master")))
+			})
+
+			It("should not return any files", func() {
+				ignoreFiles, _ := lister.List(ctx)
+				Expect(ignoreFiles).Should(BeNil())
+			})
+		})
+	})
 })

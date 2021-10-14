@@ -112,7 +112,16 @@ func WithSuffix(suffix string) GitHubListerOption {
 // List returns an array of files filtered by the provided suffix.
 func (l GitHubLister) List(ctx context.Context) ([]string, error) {
 	var files []string
-	branch, _, _ := l.client.Repositories.GetBranch(ctx, l.Organization, l.Repository, l.Branch, true)
+	branch, _, err := l.client.Repositories.GetBranch(ctx, l.Organization, l.Repository, l.Branch, true)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"unable to get branch information for %s/%s at %s: %w",
+			l.Organization,
+			l.Repository,
+			l.Branch,
+			err,
+		)
+	}
 	sha := branch.GetCommit().GetCommit().GetTree().GetSHA()
 	tree, _, _ := l.client.Git.GetTree(ctx, l.Organization, l.Repository, sha, true)
 	for _, entry := range tree.Entries {
