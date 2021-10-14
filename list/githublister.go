@@ -116,9 +116,11 @@ func (l GitHubLister) List(ctx context.Context) ([]string, error) {
 	sha := branch.GetCommit().GetCommit().GetTree().GetSHA()
 	tree, _, _ := l.client.Git.GetTree(ctx, l.Organization, l.Repository, sha, true)
 	for _, entry := range tree.Entries {
-		path := entry.GetPath()
-		if strings.HasSuffix(path, l.Suffix) {
-			files = append(files, path)
+		if entry.GetType() == "blob" {
+			path := entry.GetPath()
+			if strings.HasSuffix(path, l.Suffix) {
+				files = append(files, path)
+			}
 		}
 	}
 	return files, nil
