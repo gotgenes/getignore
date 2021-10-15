@@ -19,7 +19,10 @@ import (
 func main() {
 	log.SetFlags(0)
 	app := creatCLI()
-	app.RunAndExitOnError()
+	err := app.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func creatCLI() *cli.App {
