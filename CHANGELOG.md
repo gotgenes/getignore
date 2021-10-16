@@ -1,6 +1,19 @@
 # Changelog
 
-## 3.0.0 - TBD
+## 3.0.0 - 2021-10-16
+
+### Added
+
+* Added the following options to `list` command:
+
+  * `--base-url`: the base URL to the GitHub REST API v3-compatible server
+  * `--owner`: the owner or organization of the repository of gitignore files
+  * `--repository`: the name of the repository of gitignore files
+  * `--branch`: the branch of the repository from which to list gitignore files
+
+### Removed
+
+* Removed the `--api-url` option.
 
 ### Changed
 
@@ -14,6 +27,7 @@
 ### Fixed
 
 * Fixed `make install` so that it includes necessary `LDFLAGS`, too.
+
 
 ## 2.1.0 - 2021-09-04
 
