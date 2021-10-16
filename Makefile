@@ -1,6 +1,6 @@
 DIST_DIRS := find dist -depth 1 -type d -execdir
 VERSION := $(patsubst v%,%,$(shell git describe --tags))
-LDFLAGS := -ldflags "-X 'github.com/gotgenes/getignore/constants.Version=${VERSION}'"
+LDFLAGS := -ldflags "-X 'github.com/gotgenes/getignore/identifiers.Version=${VERSION}'"
 
 build:
 	go build ${LDFLAGS}
