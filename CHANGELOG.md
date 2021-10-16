@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.0.0 - TBD
+
+### Changed
+
+* Refactored `list` command to use [GitHub REST API v3](https://docs.github.com/en/rest).
+* Added dependency on [go-github](https://github.com/google/go-github) to interact with the GitHub REST API.
+* Upgrade dependencies.
+
+
 ## 2.1.1 - 2021-09-04
 
 ### Fixed
