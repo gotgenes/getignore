@@ -8,6 +8,9 @@ build:
 install:
 	go install ${LDFLAGS}
 
+install-deps:
+	go install github.com/onsi/ginkgo/ginkgo@v1.16.5
+
 test:
 	go vet ./...
 	ginkgo -r ${LDFLAGS}
@@ -30,4 +33,4 @@ dist: build-all
 	$(DIST_DIRS) tar -zcf {}.tar.gz {} \; && \
 	$(DIST_DIRS) zip -r {}.zip {} \;
 
-.PHONY: build test install tag clean build-all dist
+.PHONY: build test install install-deps tag clean build-all dist
