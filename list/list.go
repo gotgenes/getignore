@@ -9,8 +9,15 @@ import (
 	"strings"
 )
 
-const userAgentTemplate = "getignore/%s"
-const acceptType string = "application/vnd.github.v3+json"
+const (
+	Owner      = "github"
+	Repository = "gitignore"
+	Branch     = "master"
+	Suffix     = ".gitignore"
+
+	userAgentTemplate        = "getignore/%s"
+	acceptType        string = "application/vnd.github.v3+json"
+)
 
 // ListIgnoreFiles downloads a list of ignore files and returns them as a
 // newline-delimited string.  The function assumes the URL points to the GitHub

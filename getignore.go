@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -68,26 +67,7 @@ func creatCLI() *cli.App {
 			ArgsUsage: "[gitignore_name] [gitignore_name …]",
 			Action:    downloadAllIgnoreFiles,
 		},
-		{
-			Name:  "list",
-			Usage: "Retrieves and prints a list of available ignore files",
-			Flags: []cli.Flag{
-				&cli.StringFlag{
-					Name:    "api-url",
-					Aliases: []string{"u"},
-					Usage:   "The GitHub Tree API-compatible URL to the repository of ignore files",
-					Value:   "https://api.github.com/repos/github/gitignore/git/trees/master?recursive=1",
-				},
-				&cli.StringFlag{
-					Name:    "suffix",
-					Aliases: []string{"s"},
-					Usage:   "The suffix to use to identify ignore files",
-					Value:   ".gitignore",
-				},
-			},
-			ArgsUsage: "",
-			Action:    listIgnoreFiles,
-		},
+		list.Command,
 	}
 
 	return app
@@ -148,13 +128,4 @@ func getOutputFile(context *cli.Context) (outputFilePath string, outputFile io.W
 		outputFile, err = os.Create(outputFilePath)
 	}
 	return
-}
-
-func listIgnoreFiles(context *cli.Context) error {
-	outputString, err := list.ListIgnoreFiles(context.String("api-url"), identifiers.Version, context.String("suffix"))
-	if err != nil {
-		return err
-	}
-	_, err = fmt.Println(outputString)
-	return err
 }

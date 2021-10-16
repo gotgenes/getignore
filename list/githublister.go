@@ -33,10 +33,10 @@ type gitHubListerParams struct {
 // NewGitHubLister returns a GitHubLister.
 func NewGitHubLister(options ...GitHubListerOption) (GitHubLister, error) {
 	params := &gitHubListerParams{
-		owner:      "github",
-		repository: "gitignore",
-		branch:     "master",
-		suffix:     ".gitignore",
+		owner:      Owner,
+		repository: Repository,
+		branch:     Branch,
+		suffix:     Suffix,
 	}
 	for _, option := range options {
 		option(params)
