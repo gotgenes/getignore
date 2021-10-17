@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.0.1 - 2021-10-16
+
+### Removed
+
+* Removed unused code for `list` command.
+
+
 ## 3.0.0 - 2021-10-16
 
 ### Added
