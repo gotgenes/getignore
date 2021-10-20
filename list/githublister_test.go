@@ -69,7 +69,6 @@ var _ = Describe("GitHubLister", func() {
 		})
 
 		It("should send requests with the expected headers", func() {
-
 			lister.List(ctx)
 
 			Expect(server.ReceivedRequests()).Should(HaveLen(2))
@@ -77,6 +76,23 @@ var _ = Describe("GitHubLister", func() {
 	})
 
 	Context("happy path", func() {
+		var (
+			statusCode       = http.StatusOK
+			treeResponseBody string
+		)
+
+		assertReturnsExpectedFiles := func(expectedFiles []string, desc string) {
+			It(desc, func() {
+				ignoreFiles, _ := lister.List(ctx)
+				Expect(ignoreFiles).Should(Equal(expectedFiles))
+			})
+
+			It("should not have an error", func() {
+				_, err := lister.List(ctx)
+				Expect(err).ShouldNot(HaveOccurred())
+			})
+		}
+
 		BeforeEach(func() {
 			branchesResponseBody := `{
 	  "name": "master",
@@ -94,33 +110,24 @@ var _ = Describe("GitHubLister", func() {
 					ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/master"),
 					ghttp.RespondWith(http.StatusOK, branchesResponseBody),
 				),
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/git/trees/5adf061bdde4dd26889be1e74028b2f54aabc346"),
+					ghttp.RespondWithPtr(&statusCode, &treeResponseBody),
+				),
 			)
 		})
 
 		When("the tree response is empty", func() {
 			BeforeEach(func() {
-				server.AppendHandlers(
-					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/git/trees/5adf061bdde4dd26889be1e74028b2f54aabc346"),
-						ghttp.RespondWith(http.StatusOK, "{}"),
-					),
-				)
+				treeResponseBody = "{}"
 			})
 
-			It("should return an empty slice", func() {
-				ignoreFiles, _ := lister.List(ctx)
-				Expect(ignoreFiles).Should(BeNil())
-			})
-
-			It("should not have an error", func() {
-				_, err := lister.List(ctx)
-				Expect(err).ShouldNot(HaveOccurred())
-			})
+			assertReturnsExpectedFiles(nil, "should return an empty slice")
 		})
 
 		When("the response has gitignore files", func() {
 			BeforeEach(func() {
-				responseBody := `{
+				treeResponseBody = `{
   "sha": "5adf061bdde4dd26889be1e74028b2f54aabc346",
   "url": "https://api.github.com/repos/github/gitignore/git/trees/5adf061bdde4dd26889be1e74028b2f54aabc346",
   "tree": [
@@ -152,24 +159,12 @@ var _ = Describe("GitHubLister", func() {
   "truncated": false
 }
 				}`
-				server.AppendHandlers(
-					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/git/trees/5adf061bdde4dd26889be1e74028b2f54aabc346"),
-						ghttp.RespondWith(http.StatusOK, responseBody),
-					),
-				)
 			})
 
-			It("should return a list of gitignore files", func() {
-				ignoreFiles, _ := lister.List(ctx)
-				Expect(ignoreFiles).Should(Equal(
-					[]string{"Actionscript.gitignore", "Global/Anjuta.gitignore", "community/AWS/SAM.gitignore"}))
-			})
-
-			It("should not have an error", func() {
-				_, err := lister.List(ctx)
-				Expect(err).ShouldNot(HaveOccurred())
-			})
+			assertReturnsExpectedFiles(
+				[]string{"Actionscript.gitignore", "Global/Anjuta.gitignore", "community/AWS/SAM.gitignore"},
+				"should return a list of gitignore files",
+			)
 		})
 
 		When("the response has additional files", func() {
@@ -230,21 +225,15 @@ var _ = Describe("GitHubLister", func() {
 				)
 			})
 
-			It("should filter files with .gitignore suffix", func() {
-				ignoreFiles, _ := lister.List(ctx)
-				Expect(ignoreFiles).Should(Equal(
-					[]string{"Actionscript.gitignore", "Global/Anjuta.gitignore", "community/AWS/SAM.gitignore"}))
-			})
-
-			It("should not have an error", func() {
-				_, err := lister.List(ctx)
-				Expect(err).ShouldNot(HaveOccurred())
-			})
+			assertReturnsExpectedFiles(
+				[]string{"Actionscript.gitignore", "Global/Anjuta.gitignore", "community/AWS/SAM.gitignore"},
+				"should filter files with .gitignore suffix",
+			)
 		})
 
 		When("the response has directories", func() {
 			BeforeEach(func() {
-				responseBody := `{
+				treeResponseBody = `{
   "sha": "5adf061bdde4dd26889be1e74028b2f54aabc346",
   "url": "https://api.github.com/repos/github/gitignore/git/trees/5adf061bdde4dd26889be1e74028b2f54aabc346",
   "tree": [
@@ -297,28 +286,28 @@ var _ = Describe("GitHubLister", func() {
   "truncated": false
 }
 				}`
-				server.AppendHandlers(
-					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/git/trees/5adf061bdde4dd26889be1e74028b2f54aabc346"),
-						ghttp.RespondWith(http.StatusOK, responseBody),
-					),
-				)
 			})
 
-			It("should return only files", func() {
-				ignoreFiles, _ := lister.List(ctx)
-				Expect(ignoreFiles).Should(Equal(
-					[]string{"Actionscript.gitignore", "Global/Anjuta.gitignore", "community/AWS/SAM.gitignore"}))
-			})
-
-			It("should not have an error", func() {
-				_, err := lister.List(ctx)
-				Expect(err).ShouldNot(HaveOccurred())
-			})
+			assertReturnsExpectedFiles(
+				[]string{"Actionscript.gitignore", "Global/Anjuta.gitignore", "community/AWS/SAM.gitignore"},
+				"should return only files",
+			)
 		})
 	})
 
 	Context("server errors", func() {
+		assertReturnsError := func(errorMatcher interface{}) {
+			It("should return an error", func() {
+				_, err := lister.List(ctx)
+				Expect(err).Should(MatchError(errorMatcher))
+			})
+
+			It("should not return any files", func() {
+				ignoreFiles, _ := lister.List(ctx)
+				Expect(ignoreFiles).Should(BeNil())
+			})
+		}
+
 		When("the branches endpoint returns empty", func() {
 			BeforeEach(func() {
 
@@ -330,15 +319,7 @@ var _ = Describe("GitHubLister", func() {
 				)
 			})
 
-			It("should return an error", func() {
-				_, err := lister.List(ctx)
-				Expect(err).Should(MatchError("no branch information received for github/gitignore at master"))
-			})
-
-			It("should not return any files", func() {
-				ignoreFiles, _ := lister.List(ctx)
-				Expect(ignoreFiles).Should(BeNil())
-			})
+			assertReturnsError("no branch information received for github/gitignore at master")
 		})
 		When("the branches endpoint errors", func() {
 			BeforeEach(func() {
@@ -350,15 +331,7 @@ var _ = Describe("GitHubLister", func() {
 				)
 			})
 
-			It("should have an error", func() {
-				_, err := lister.List(ctx)
-				Expect(err).Should(MatchError(HavePrefix("unable to get branch information for github/gitignore at master")))
-			})
-
-			It("should not return any files", func() {
-				ignoreFiles, _ := lister.List(ctx)
-				Expect(ignoreFiles).Should(BeNil())
-			})
+			assertReturnsError(HavePrefix("unable to get branch information for github/gitignore at master"))
 		})
 
 		When("the trees endpoint errors", func() {
@@ -386,15 +359,7 @@ var _ = Describe("GitHubLister", func() {
 				)
 			})
 
-			It("should have an error", func() {
-				_, err := lister.List(ctx)
-				Expect(err).Should(MatchError(HavePrefix("unable to get tree information for github/gitignore at master")))
-			})
-
-			It("should not return any files", func() {
-				ignoreFiles, _ := lister.List(ctx)
-				Expect(ignoreFiles).Should(BeNil())
-			})
+			assertReturnsError(HavePrefix("unable to get tree information for github/gitignore at master"))
 		})
 	})
 })
