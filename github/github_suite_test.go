@@ -1,4 +1,4 @@
-package list_test
+package github_test
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestList(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "List Suite")
+	RunSpecs(t, "GitHub Suite")
 }

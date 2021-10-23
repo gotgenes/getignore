@@ -1,4 +1,4 @@
-package list
+package github
 
 import (
 	"context"
@@ -10,8 +10,8 @@ import (
 	"github.com/gotgenes/getignore/identifiers"
 )
 
-// GitHubLister lists ignore files using the GitHub tree API.
-type GitHubLister struct {
+// Getter lists ignore files using the GitHub tree API.
+type Getter struct {
 	client     *github.Client
 	BaseURL    string
 	Owner      string
@@ -30,8 +30,7 @@ type gitHubListerParams struct {
 	suffix     string
 }
 
-// NewGitHubLister returns a GitHubLister.
-func NewGitHubLister(options ...GitHubListerOption) (GitHubLister, error) {
+func NewGetter(options ...GitHubListerOption) (Getter, error) {
 	params := &gitHubListerParams{
 		owner:      Owner,
 		repository: Repository,
@@ -48,14 +47,14 @@ func NewGitHubLister(options ...GitHubListerOption) (GitHubLister, error) {
 	if params.baseURL != "" {
 		ghClient, err = github.NewEnterpriseClient(params.baseURL, params.baseURL, params.client)
 		if err != nil {
-			return GitHubLister{}, err
+			return Getter{}, err
 		}
 	} else {
 		ghClient = github.NewClient(params.client)
 	}
 	userAgentString := fmt.Sprintf(userAgentTemplate, identifiers.Version)
 	ghClient.UserAgent = userAgentString
-	return GitHubLister{
+	return Getter{
 		client:     ghClient,
 		BaseURL:    params.baseURL,
 		Owner:      params.owner,
@@ -110,7 +109,7 @@ func WithSuffix(suffix string) GitHubListerOption {
 }
 
 // List returns an array of files filtered by the provided suffix.
-func (l GitHubLister) List(ctx context.Context) ([]string, error) {
+func (l Getter) List(ctx context.Context) ([]string, error) {
 	var files []string
 	branch, _, err := l.client.Repositories.GetBranch(ctx, l.Owner, l.Repository, l.Branch, true)
 	if err != nil {
