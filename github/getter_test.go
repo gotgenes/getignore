@@ -497,6 +497,51 @@ var _ = Describe("Getter", func() {
 					}))
 				})
 			})
+
+			Context("getting multiple files", func() {
+				When("the server responds in the same order", func() {
+					BeforeEach(func() {
+						server.AppendHandlers(
+							ghttp.CombineHandlers(
+								ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/git/blobs/66fd13c903cac02eb9657cd53fb227823484401d"),
+								ghttp.VerifyHeader(http.Header{
+									"User-Agent": expectedUserAgent,
+								}),
+								ghttp.VerifyHeader(http.Header{
+									"Accept": []string{"application/vnd.github.v3.raw"},
+								}),
+								ghttp.RespondWith(http.StatusOK, "*.o\n*.a\n*.so\n"),
+							),
+							ghttp.CombineHandlers(
+								ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/git/blobs/20dd42c53e6f0df8233fee457b664d443ee729f4"),
+								ghttp.VerifyHeader(http.Header{
+									"User-Agent": expectedUserAgent,
+								}),
+								ghttp.VerifyHeader(http.Header{
+									"Accept": []string{"application/vnd.github.v3.raw"},
+								}),
+								ghttp.RespondWith(http.StatusOK, "/.anjuta/\n/.anjuta_sym_db.db\n"),
+							),
+						)
+					})
+
+					It("returns contents in the same order as names", func() {
+						contents, err := getter.Get(ctx, []string{"Go.gitignore", "Global/Anjuta.gitignore"})
+						Expect(err).ShouldNot(HaveOccurred())
+						Expect(contents).To(Equal([]contentstructs.NamedIgnoreContents{
+							{
+								Name:     "Go.gitignore",
+								Contents: "*.o\n*.a\n*.so\n",
+							},
+							{
+								Name:     "Global/Anjuta.gitignore",
+								Contents: "/.anjuta/\n/.anjuta_sym_db.db\n",
+							},
+						}))
+					})
+				})
+			})
+
 		})
 
 		Context("server errors", func() {
