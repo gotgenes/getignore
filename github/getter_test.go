@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gotgenes/getignore/contentstructs"
 	"github.com/gotgenes/getignore/github"
 	"github.com/gotgenes/getignore/identifiers"
 	. "github.com/onsi/ginkgo"
@@ -223,13 +224,6 @@ var _ = Describe("Getter", func() {
 	  "url": "https://api.github.com/repos/github/gitignore/git/blobs/5d947ca8879f8a9072fe485c566204e3c2929e80"
 	},
 	{
-	  "path": "foo.gitignore",
-	  "mode": "040000",
-	  "type": "tree",
-	  "sha": "a1f9ba2be789d9d7a3559967c42f22cbea9bf8dc",
-	  "url": "https://api.github.com/repos/github/gitignore/git/trees/a1f9ba2be789d9d7a3559967c42f22cbea9bf8dc"
-	},
-	{
 	  "path": "Global",
 	  "mode": "040000",
 	  "type": "tree",
@@ -251,6 +245,13 @@ var _ = Describe("Getter", func() {
 	  "sha": "dc9d020aee1ebc1a23c02d80a1c33c0cb35ebaeb",
 	  "size": 167,
 	  "url": "https://api.github.com/repos/github/gitignore/git/blobs/dc9d020aee1ebc1a23c02d80a1c33c0cb35ebaeb"
+	},
+	{
+	  "path": "foo.gitignore",
+	  "mode": "040000",
+	  "type": "tree",
+	  "sha": "a1f9ba2be789d9d7a3559967c42f22cbea9bf8dc",
+	  "url": "https://api.github.com/repos/github/gitignore/git/trees/a1f9ba2be789d9d7a3559967c42f22cbea9bf8dc"
 	}
   ],
   "truncated": false
@@ -354,6 +355,147 @@ var _ = Describe("Getter", func() {
 				})
 
 				assertReturnsError(HavePrefix("unable to get tree information for github/gitignore at master"))
+			})
+		})
+	})
+
+	Describe("Get", func() {
+		Context("happy path", func() {
+			BeforeEach(func() {
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/master"),
+						ghttp.VerifyHeader(http.Header{
+							"User-Agent": expectedUserAgent,
+						}),
+						ghttp.VerifyHeader(http.Header{
+							"Accept": []string{"application/vnd.github.v3+json"},
+						}),
+						ghttp.RespondWith(
+							http.StatusOK,
+							`{
+  "name": "master",
+  "commit": {
+	"sha": "b0012e4930d0a8c350254a3caeedf7441ea286a3",
+	"commit": {
+	  "tree": {
+		"sha": "5adf061bdde4dd26889be1e74028b2f54aabc346"
+	  }
+	}
+  }
+}`,
+						),
+					),
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/git/trees/5adf061bdde4dd26889be1e74028b2f54aabc346"),
+						ghttp.VerifyHeader(http.Header{
+							"User-Agent": expectedUserAgent,
+						}),
+						ghttp.VerifyHeader(http.Header{
+							"Accept": []string{"application/vnd.github.v3+json"},
+						}),
+						ghttp.RespondWith(
+							http.StatusOK,
+							`{
+  "sha": "5adf061bdde4dd26889be1e74028b2f54aabc346",
+  "url": "https://api.github.com/repos/github/gitignore/git/trees/5adf061bdde4dd26889be1e74028b2f54aabc346",
+  "tree": [
+	{
+	  "path": ".github",
+	  "mode": "040000",
+	  "type": "tree",
+	  "sha": "45f58ef9211cc06f3ef86585c7ecb1b3d52fd4f9",
+	  "url": "https://api.github.com/repos/github/gitignore/git/trees/45f58ef9211cc06f3ef86585c7ecb1b3d52fd4f9"
+	},
+	{
+	  "path": ".github/PULL_REQUEST_TEMPLATE.md",
+	  "mode": "100644",
+	  "type": "blob",
+	  "sha": "247a5b56e890c2ab29eb337f26aa623deb2feefc",
+	  "size": 199,
+	  "url": "https://api.github.com/repos/github/gitignore/git/blobs/247a5b56e890c2ab29eb337f26aa623deb2feefc"
+	},
+	{
+	  "path": ".travis.yml",
+	  "mode": "100644",
+	  "type": "blob",
+	  "sha": "4009e0bc8b07582c19fa761810c9f3741ab76597",
+	  "size": 103,
+	  "url": "https://api.github.com/repos/github/gitignore/git/blobs/4009e0bc8b07582c19fa761810c9f3741ab76597"
+	},
+	{
+	  "path": "Actionscript.gitignore",
+	  "mode": "100644",
+	  "type": "blob",
+	  "sha": "5d947ca8879f8a9072fe485c566204e3c2929e80",
+	  "size": 350,
+	  "url": "https://api.github.com/repos/github/gitignore/git/blobs/5d947ca8879f8a9072fe485c566204e3c2929e80"
+	},
+	{
+	  "path": "Global/Anjuta.gitignore",
+	  "mode": "100644",
+	  "type": "blob",
+	  "sha": "20dd42c53e6f0df8233fee457b664d443ee729f4",
+	  "size": 78,
+	  "url": "https://api.github.com/repos/github/gitignore/git/blobs/20dd42c53e6f0df8233fee457b664d443ee729f4"
+	},
+    {
+      "path": "Go.gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "66fd13c903cac02eb9657cd53fb227823484401d",
+      "size": 269,
+      "url": "https://api.github.com/repos/github/gitignore/git/blobs/66fd13c903cac02eb9657cd53fb227823484401d"
+    },
+	{
+	  "path": "community/AWS/SAM.gitignore",
+	  "mode": "100644",
+	  "type": "blob",
+	  "sha": "dc9d020aee1ebc1a23c02d80a1c33c0cb35ebaeb",
+	  "size": 167,
+	  "url": "https://api.github.com/repos/github/gitignore/git/blobs/dc9d020aee1ebc1a23c02d80a1c33c0cb35ebaeb"
+	},
+	{
+	  "path": "foo.gitignore",
+	  "mode": "040000",
+	  "type": "tree",
+	  "sha": "a1f9ba2be789d9d7a3559967c42f22cbea9bf8dc",
+	  "url": "https://api.github.com/repos/github/gitignore/git/trees/a1f9ba2be789d9d7a3559967c42f22cbea9bf8dc"
+	}
+  ],
+  "truncated": false
+}`,
+						),
+					),
+				)
+			})
+
+			When("getting a single file", func() {
+				BeforeEach(func() {
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/git/blobs/66fd13c903cac02eb9657cd53fb227823484401d"),
+							ghttp.VerifyHeader(http.Header{
+								"User-Agent": expectedUserAgent,
+							}),
+							ghttp.VerifyHeader(http.Header{
+								"Accept": []string{"application/vnd.github.v3.raw"},
+							}),
+							ghttp.RespondWith(http.StatusOK, "*.o\n*.a\n*.so\n"),
+						),
+					)
+				})
+
+				It("returns contents when it matches a name", func() {
+					contents, err := getter.Get(ctx, []string{"Go.gitignore"})
+					Expect(err).ShouldNot(HaveOccurred())
+					Expect(contents).To(Equal([]contentstructs.NamedIgnoreContents{
+						{
+							Name:     "Go.gitignore",
+							Contents: "*.o\n*.a\n*.so\n",
+						},
+					}))
+				})
 			})
 		})
 	})

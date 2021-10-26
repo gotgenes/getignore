@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v39/github"
+	"github.com/gotgenes/getignore/contentstructs"
 	"github.com/gotgenes/getignore/identifiers"
 )
 
@@ -109,15 +110,49 @@ func WithSuffix(suffix string) GitHubListerOption {
 }
 
 // List returns an array of files filtered by the provided suffix.
-func (l Getter) List(ctx context.Context) ([]string, error) {
+func (g Getter) List(ctx context.Context) ([]string, error) {
+	tree, err := g.getTree(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entries := g.filterTreeEntries(tree.Entries)
 	var files []string
-	branch, _, err := l.client.Repositories.GetBranch(ctx, l.Owner, l.Repository, l.Branch, true)
+	for _, entry := range entries {
+		files = append(files, entry.GetPath())
+	}
+	return files, nil
+}
+
+func (g Getter) Get(ctx context.Context, names []string) ([]contentstructs.NamedIgnoreContents, error) {
+	tree, _ := g.getTree(ctx)
+	var namedContents []contentstructs.NamedIgnoreContents
+	pathsToSHAs := make(map[string]string)
+	for _, entry := range tree.Entries {
+		if path := entry.GetPath(); path != "" {
+			pathsToSHAs[path] = entry.GetSHA()
+		}
+	}
+	for _, name := range names {
+		sha, ok := pathsToSHAs[name]
+		if ok {
+			contents, _, _ := g.client.Git.GetBlobRaw(ctx, g.Owner, g.Repository, sha)
+			namedContents = append(namedContents, contentstructs.NamedIgnoreContents{
+				Name:     name,
+				Contents: string(contents),
+			})
+		}
+	}
+	return namedContents, nil
+}
+
+func (g Getter) getTree(ctx context.Context) (*github.Tree, error) {
+	branch, _, err := g.client.Repositories.GetBranch(ctx, g.Owner, g.Repository, g.Branch, true)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"unable to get branch information for %s/%s at %s: %w",
-			l.Owner,
-			l.Repository,
-			l.Branch,
+			g.Owner,
+			g.Repository,
+			g.Branch,
 			err,
 		)
 	}
@@ -125,28 +160,32 @@ func (l Getter) List(ctx context.Context) ([]string, error) {
 	if sha == "" {
 		return nil, fmt.Errorf(
 			"no branch information received for %s/%s at %s",
-			l.Owner,
-			l.Repository,
-			l.Branch,
+			g.Owner,
+			g.Repository,
+			g.Branch,
 		)
 	}
-	tree, _, err := l.client.Git.GetTree(ctx, l.Owner, l.Repository, sha, true)
+	tree, _, err := g.client.Git.GetTree(ctx, g.Owner, g.Repository, sha, true)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"unable to get tree information for %s/%s at %s: %w",
-			l.Owner,
-			l.Repository,
-			l.Branch,
+			g.Owner,
+			g.Repository,
+			g.Branch,
 			err,
 		)
 	}
-	for _, entry := range tree.Entries {
+	return tree, nil
+}
+
+func (g Getter) filterTreeEntries(treeEntries []*github.TreeEntry) []*github.TreeEntry {
+	var entries []*github.TreeEntry
+	for _, entry := range treeEntries {
 		if entry.GetType() == "blob" {
-			path := entry.GetPath()
-			if strings.HasSuffix(path, l.Suffix) {
-				files = append(files, path)
+			if strings.HasSuffix(entry.GetPath(), g.Suffix) {
+				entries = append(entries, entry)
 			}
 		}
 	}
-	return files, nil
+	return entries
 }
