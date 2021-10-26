@@ -124,7 +124,10 @@ func (g Getter) List(ctx context.Context) ([]string, error) {
 }
 
 func (g Getter) Get(ctx context.Context, names []string) ([]contentstructs.NamedIgnoreContents, error) {
-	tree, _ := g.getTree(ctx)
+	tree, err := g.getTree(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var namedContents []contentstructs.NamedIgnoreContents
 	pathsToSHAs := make(map[string]string)
 	for _, entry := range tree.Entries {

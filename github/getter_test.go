@@ -498,5 +498,97 @@ var _ = Describe("Getter", func() {
 				})
 			})
 		})
+
+		Context("server errors", func() {
+			assertReturnsError := func(errorMatcher interface{}) {
+				It("should return an error", func() {
+					_, err := getter.Get(ctx, []string{"Go.gitignore"})
+					Expect(err).Should(MatchError(errorMatcher))
+				})
+
+				It("should not return any files", func() {
+					contents, _ := getter.Get(ctx, []string{"Go.gitignore"})
+					Expect(contents).Should(BeNil())
+				})
+			}
+
+			When("the branches endpoint returns empty", func() {
+				BeforeEach(func() {
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/master"),
+							ghttp.VerifyHeader(http.Header{
+								"User-Agent": expectedUserAgent,
+							}),
+							ghttp.VerifyHeader(http.Header{
+								"Accept": []string{"application/vnd.github.v3+json"},
+							}),
+							ghttp.RespondWith(http.StatusOK, "{}"),
+						),
+					)
+				})
+
+				assertReturnsError("no branch information received for github/gitignore at master")
+			})
+
+			When("the branches endpoint errors", func() {
+				BeforeEach(func() {
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/master"),
+							ghttp.VerifyHeader(http.Header{
+								"User-Agent": expectedUserAgent,
+							}),
+							ghttp.VerifyHeader(http.Header{
+								"Accept": []string{"application/vnd.github.v3+json"},
+							}),
+							ghttp.RespondWith(http.StatusInternalServerError, `{"message": "something went wrong"}`),
+						),
+					)
+				})
+
+				assertReturnsError(HavePrefix("unable to get branch information for github/gitignore at master"))
+			})
+
+			When("the trees endpoint errors", func() {
+				BeforeEach(func() {
+					branchesResponseBody := `{
+  "name": "master",
+  "commit": {
+	"sha": "b0012e4930d0a8c350254a3caeedf7441ea286a3",
+	"commit": {
+	  "tree": {
+		"sha": "5adf061bdde4dd26889be1e74028b2f54aabc346"
+	  }
+	}
+  }
+}`
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/master"),
+							ghttp.VerifyHeader(http.Header{
+								"User-Agent": expectedUserAgent,
+							}),
+							ghttp.VerifyHeader(http.Header{
+								"Accept": []string{"application/vnd.github.v3+json"},
+							}),
+							ghttp.RespondWith(http.StatusOK, branchesResponseBody),
+						),
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/git/trees/5adf061bdde4dd26889be1e74028b2f54aabc346"),
+							ghttp.VerifyHeader(http.Header{
+								"User-Agent": expectedUserAgent,
+							}),
+							ghttp.VerifyHeader(http.Header{
+								"Accept": []string{"application/vnd.github.v3+json"},
+							}),
+							ghttp.RespondWith(http.StatusInternalServerError, `{"message": "something went wrong"}`),
+						),
+					)
+				})
+
+				assertReturnsError(HavePrefix("unable to get tree information for github/gitignore at master"))
+			})
+		})
 	})
 })
