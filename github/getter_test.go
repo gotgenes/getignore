@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gotgenes/getignore/contentstructs"
 	"github.com/gotgenes/getignore/github"
@@ -12,6 +13,11 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 )
+
+type contentsAndError struct {
+	Contents []contentstructs.NamedIgnoreContents
+	Err      error
+}
 
 var _ = Describe("Getter", func() {
 	var (
@@ -499,49 +505,117 @@ var _ = Describe("Getter", func() {
 			})
 
 			Context("getting multiple files", func() {
+				var (
+					goResponseChan     chan bool
+					anjutaResponseChan chan bool
+					resultsChan        chan contentsAndError
+				)
 				When("the server responds in the same order", func() {
 					BeforeEach(func() {
-						server.AppendHandlers(
+						goResponseChan = make(chan bool)
+						anjutaResponseChan = make(chan bool)
+						resultsChan = make(chan contentsAndError)
+						server.RouteToHandler(
+							"GET",
+							"/api/v3/repos/github/gitignore/git/blobs/66fd13c903cac02eb9657cd53fb227823484401d",
 							ghttp.CombineHandlers(
-								ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/git/blobs/66fd13c903cac02eb9657cd53fb227823484401d"),
 								ghttp.VerifyHeader(http.Header{
 									"User-Agent": expectedUserAgent,
 								}),
 								ghttp.VerifyHeader(http.Header{
 									"Accept": []string{"application/vnd.github.v3.raw"},
 								}),
+								func(w http.ResponseWriter, r *http.Request) { <-goResponseChan },
 								ghttp.RespondWith(http.StatusOK, "*.o\n*.a\n*.so\n"),
 							),
+						)
+						server.RouteToHandler(
+							"GET",
+							"/api/v3/repos/github/gitignore/git/blobs/20dd42c53e6f0df8233fee457b664d443ee729f4",
 							ghttp.CombineHandlers(
-								ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/git/blobs/20dd42c53e6f0df8233fee457b664d443ee729f4"),
 								ghttp.VerifyHeader(http.Header{
 									"User-Agent": expectedUserAgent,
 								}),
 								ghttp.VerifyHeader(http.Header{
 									"Accept": []string{"application/vnd.github.v3.raw"},
 								}),
+								func(w http.ResponseWriter, r *http.Request) { <-anjutaResponseChan },
 								ghttp.RespondWith(http.StatusOK, "/.anjuta/\n/.anjuta_sym_db.db\n"),
 							),
 						)
 					})
 
-					It("returns contents in the same order as names", func() {
-						contents, err := getter.Get(ctx, []string{"Go.gitignore", "Global/Anjuta.gitignore"})
-						Expect(err).ShouldNot(HaveOccurred())
-						Expect(contents).To(Equal([]contentstructs.NamedIgnoreContents{
-							{
-								Name:     "Go.gitignore",
-								Contents: "*.o\n*.a\n*.so\n",
-							},
-							{
-								Name:     "Global/Anjuta.gitignore",
-								Contents: "/.anjuta/\n/.anjuta_sym_db.db\n",
-							},
-						}))
+					When("the Ajnuta response is slower", func() {
+						BeforeEach(func() {
+							go func() {
+								contents, err := getter.Get(ctx, []string{"Go.gitignore", "Global/Anjuta.gitignore"})
+								resultsChan <- contentsAndError{Contents: contents, Err: err}
+							}()
+							go func() {
+								goResponseChan <- true
+							}()
+							go func() {
+								time.Sleep(10 * time.Microsecond)
+								anjutaResponseChan <- true
+							}()
+						})
+
+						It("returns contents in the same order as names", func() {
+							Eventually(
+								func() []contentstructs.NamedIgnoreContents {
+									result := <-resultsChan
+									return result.Contents
+								},
+								"100ms",
+							).Should(Equal([]contentstructs.NamedIgnoreContents{
+								{
+									Name:     "Go.gitignore",
+									Contents: "*.o\n*.a\n*.so\n",
+								},
+								{
+									Name:     "Global/Anjuta.gitignore",
+									Contents: "/.anjuta/\n/.anjuta_sym_db.db\n",
+								},
+							}))
+						})
+					})
+
+					When("the Go response is slower", func() {
+						BeforeEach(func() {
+							go func() {
+								contents, err := getter.Get(ctx, []string{"Go.gitignore", "Global/Anjuta.gitignore"})
+								resultsChan <- contentsAndError{Contents: contents, Err: err}
+							}()
+							go func() {
+								anjutaResponseChan <- true
+							}()
+							go func() {
+								time.Sleep(10 * time.Microsecond)
+								goResponseChan <- true
+							}()
+						})
+
+						It("returns contents in the same order as names", func() {
+							Eventually(
+								func() []contentstructs.NamedIgnoreContents {
+									result := <-resultsChan
+									return result.Contents
+								},
+								"100ms",
+							).Should(Equal([]contentstructs.NamedIgnoreContents{
+								{
+									Name:     "Go.gitignore",
+									Contents: "*.o\n*.a\n*.so\n",
+								},
+								{
+									Name:     "Global/Anjuta.gitignore",
+									Contents: "/.anjuta/\n/.anjuta_sym_db.db\n",
+								},
+							}))
+						})
 					})
 				})
 			})
-
 		})
 
 		Context("server errors", func() {
