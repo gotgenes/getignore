@@ -366,7 +366,7 @@ var _ = Describe("Getter", func() {
 	})
 
 	Describe("Get", func() {
-		Context("happy path", func() {
+		Context("successfully retrieves the branch and tree responses", func() {
 			BeforeEach(func() {
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
@@ -506,9 +506,15 @@ var _ = Describe("Getter", func() {
 
 			Context("getting multiple files", func() {
 				var (
-					goResponseChan     chan bool
+					goStatusCode   int
+					goResponseBody string
+					goResponseChan chan bool
+
+					anjutaStatusCode   int
+					anjutaResponseBody string
 					anjutaResponseChan chan bool
-					resultsChan        chan contentsAndError
+
+					resultsChan chan contentsAndError
 				)
 				When("the server responds in the same order", func() {
 					BeforeEach(func() {
@@ -526,7 +532,7 @@ var _ = Describe("Getter", func() {
 									"Accept": []string{"application/vnd.github.v3.raw"},
 								}),
 								func(w http.ResponseWriter, r *http.Request) { <-goResponseChan },
-								ghttp.RespondWith(http.StatusOK, "*.o\n*.a\n*.so\n"),
+								ghttp.RespondWithPtr(&goStatusCode, &goResponseBody),
 							),
 						)
 						server.RouteToHandler(
@@ -540,78 +546,87 @@ var _ = Describe("Getter", func() {
 									"Accept": []string{"application/vnd.github.v3.raw"},
 								}),
 								func(w http.ResponseWriter, r *http.Request) { <-anjutaResponseChan },
-								ghttp.RespondWith(http.StatusOK, "/.anjuta/\n/.anjuta_sym_db.db\n"),
+								ghttp.RespondWithPtr(&anjutaStatusCode, &anjutaResponseBody),
 							),
 						)
 					})
 
-					When("the Ajnuta response is slower", func() {
+					Context("the blob responses succeed", func() {
 						BeforeEach(func() {
-							go func() {
-								contents, err := getter.Get(ctx, []string{"Go.gitignore", "Global/Anjuta.gitignore"})
-								resultsChan <- contentsAndError{Contents: contents, Err: err}
-							}()
-							go func() {
-								goResponseChan <- true
-							}()
-							go func() {
-								time.Sleep(10 * time.Microsecond)
-								anjutaResponseChan <- true
-							}()
+							goStatusCode = http.StatusOK
+							goResponseBody = "*.o\n*.a\n*.so\n"
+							anjutaStatusCode = http.StatusOK
+							anjutaResponseBody = "/.anjuta/\n/.anjuta_sym_db.db\n"
 						})
 
-						It("returns contents in the same order as names", func() {
-							Eventually(
-								func() []contentstructs.NamedIgnoreContents {
-									result := <-resultsChan
-									return result.Contents
-								},
-								"100ms",
-							).Should(Equal([]contentstructs.NamedIgnoreContents{
-								{
-									Name:     "Go.gitignore",
-									Contents: "*.o\n*.a\n*.so\n",
-								},
-								{
-									Name:     "Global/Anjuta.gitignore",
-									Contents: "/.anjuta/\n/.anjuta_sym_db.db\n",
-								},
-							}))
-						})
-					})
+						When("the Ajnuta response is slower", func() {
+							BeforeEach(func() {
+								go func() {
+									contents, err := getter.Get(ctx, []string{"Go.gitignore", "Global/Anjuta.gitignore"})
+									resultsChan <- contentsAndError{Contents: contents, Err: err}
+								}()
+								go func() {
+									goResponseChan <- true
+								}()
+								go func() {
+									time.Sleep(10 * time.Microsecond)
+									anjutaResponseChan <- true
+								}()
+							})
 
-					When("the Go response is slower", func() {
-						BeforeEach(func() {
-							go func() {
-								contents, err := getter.Get(ctx, []string{"Go.gitignore", "Global/Anjuta.gitignore"})
-								resultsChan <- contentsAndError{Contents: contents, Err: err}
-							}()
-							go func() {
-								anjutaResponseChan <- true
-							}()
-							go func() {
-								time.Sleep(10 * time.Microsecond)
-								goResponseChan <- true
-							}()
+							It("returns contents in the same order as names", func() {
+								Eventually(
+									func() []contentstructs.NamedIgnoreContents {
+										result := <-resultsChan
+										return result.Contents
+									},
+									"100ms",
+								).Should(Equal([]contentstructs.NamedIgnoreContents{
+									{
+										Name:     "Go.gitignore",
+										Contents: "*.o\n*.a\n*.so\n",
+									},
+									{
+										Name:     "Global/Anjuta.gitignore",
+										Contents: "/.anjuta/\n/.anjuta_sym_db.db\n",
+									},
+								}))
+							})
 						})
 
-						It("returns contents in the same order as names", func() {
-							Eventually(
-								func() []contentstructs.NamedIgnoreContents {
-									result := <-resultsChan
-									return result.Contents
-								},
-								"100ms",
-							).Should(Equal([]contentstructs.NamedIgnoreContents{
-								{
-									Name:     "Go.gitignore",
-									Contents: "*.o\n*.a\n*.so\n",
-								},
-								{
-									Name:     "Global/Anjuta.gitignore",
-									Contents: "/.anjuta/\n/.anjuta_sym_db.db\n",
-								},
-							}))
+						When("the Go response is slower", func() {
+							BeforeEach(func() {
+								go func() {
+									contents, err := getter.Get(ctx, []string{"Go.gitignore", "Global/Anjuta.gitignore"})
+									resultsChan <- contentsAndError{Contents: contents, Err: err}
+								}()
+								go func() {
+									anjutaResponseChan <- true
+								}()
+								go func() {
+									time.Sleep(10 * time.Microsecond)
+									goResponseChan <- true
+								}()
+							})
+
+							It("returns contents in the same order as names", func() {
+								Eventually(
+									func() []contentstructs.NamedIgnoreContents {
+										result := <-resultsChan
+										return result.Contents
+									},
+									"100ms",
+								).Should(Equal([]contentstructs.NamedIgnoreContents{
+									{
+										Name:     "Go.gitignore",
+										Contents: "*.o\n*.a\n*.so\n",
+									},
+									{
+										Name:     "Global/Anjuta.gitignore",
+										Contents: "/.anjuta/\n/.anjuta_sym_db.db\n",
+									},
+								}))
+							})
 						})
 					})
 				})
