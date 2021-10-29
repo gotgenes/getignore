@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/go-github/v39/github"
 	"github.com/gotgenes/getignore/contentstructs"
+	"github.com/gotgenes/getignore/errors"
 	"github.com/gotgenes/getignore/identifiers"
 )
 
@@ -135,17 +136,26 @@ func (g Getter) Get(ctx context.Context, names []string) ([]contentstructs.Named
 			pathsToSHAs[path] = entry.GetSHA()
 		}
 	}
+	var failedSources errors.FailedSources
 	for _, name := range names {
 		sha, ok := pathsToSHAs[name]
 		if ok {
-			contents, _, _ := g.client.Git.GetBlobRaw(ctx, g.Owner, g.Repository, sha)
-			namedContents = append(namedContents, contentstructs.NamedIgnoreContents{
-				Name:     name,
-				Contents: string(contents),
-			})
+			contents, _, err := g.client.Git.GetBlobRaw(ctx, g.Owner, g.Repository, sha)
+			if err != nil {
+				failedSource := errors.FailedSource{
+					Source: name,
+					Err:    err,
+				}
+				failedSources = append(failedSources, failedSource)
+			} else {
+				namedContents = append(namedContents, contentstructs.NamedIgnoreContents{
+					Name:     name,
+					Contents: string(contents),
+				})
+			}
 		}
 	}
-	return namedContents, nil
+	return namedContents, failedSources
 }
 
 func (g Getter) getTree(ctx context.Context) (*github.Tree, error) {

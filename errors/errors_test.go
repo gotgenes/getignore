@@ -18,7 +18,7 @@ func TestFailedSourcesError(t *testing.T) {
 			fmt.Errorf("Error reading response body: too many 💩s"),
 		},
 	}
-	expectedErrorStr := `Errors retrieving the following sources:
+	expectedErrorStr := `unable to retrieve the following sources:
 https://raw.githubusercontent.com/github/gitignore/master/Bogus.gitignore: status code 404
 https://raw.githubusercontent.com/github/gitignore/master/Totally.gitignore: Error reading response body: too many 💩s`
 	errorStr := failedSources.Error()

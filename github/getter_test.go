@@ -476,7 +476,12 @@ var _ = Describe("Getter", func() {
 				)
 			})
 
-			When("getting a single file", func() {
+			Context("getting a single file", func() {
+				var (
+					statusCode   int
+					responseBody string
+				)
+
 				BeforeEach(func() {
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
@@ -487,20 +492,48 @@ var _ = Describe("Getter", func() {
 							ghttp.VerifyHeader(http.Header{
 								"Accept": []string{"application/vnd.github.v3.raw"},
 							}),
-							ghttp.RespondWith(http.StatusOK, "*.o\n*.a\n*.so\n"),
+							ghttp.RespondWithPtr(&statusCode, &responseBody),
 						),
 					)
 				})
 
-				It("returns contents when it matches a name", func() {
-					contents, err := getter.Get(ctx, []string{"Go.gitignore"})
-					Expect(err).ShouldNot(HaveOccurred())
-					Expect(contents).To(Equal([]contentstructs.NamedIgnoreContents{
-						{
-							Name:     "Go.gitignore",
-							Contents: "*.o\n*.a\n*.so\n",
-						},
-					}))
+				When("the request succeeds", func() {
+					BeforeEach(func() {
+						statusCode = http.StatusOK
+						responseBody = "*.o\n*.a\n*.so\n"
+					})
+
+					It("returns contents when it matches a name", func() {
+						contents, _ := getter.Get(ctx, []string{"Go.gitignore"})
+						Expect(contents).To(Equal([]contentstructs.NamedIgnoreContents{
+							{
+								Name:     "Go.gitignore",
+								Contents: "*.o\n*.a\n*.so\n",
+							},
+						}))
+					})
+
+					It("should not return an error", func() {
+						_, err := getter.Get(ctx, []string{"Go.gitignore"})
+						Expect(err).ShouldNot(HaveOccurred())
+					})
+				})
+
+				When("the server errors", func() {
+					BeforeEach(func() {
+						statusCode = http.StatusInternalServerError
+						responseBody = `{"message": "something went wrong"}`
+					})
+
+					It("should return an error", func() {
+						_, err := getter.Get(ctx, []string{"Go.gitignore"})
+						Expect(err).Should(MatchError(HavePrefix("unable to retrieve the following sources:")))
+					})
+
+					It("should return empty contents", func() {
+						contents, _ := getter.Get(ctx, []string{"Go.gitignore"})
+						Expect(contents).Should(BeNil())
+					})
 				})
 			})
 
@@ -515,119 +548,207 @@ var _ = Describe("Getter", func() {
 					anjutaResponseChan chan bool
 
 					resultsChan chan contentsAndError
+					results     contentsAndError
 				)
-				When("the server responds in the same order", func() {
+
+				assertReturnsContentsWithoutError := func(expectedContents []contentstructs.NamedIgnoreContents) {
+					It("returns the expected contents", func() {
+						Eventually(resultsChan).Should(Receive(&results))
+						Expect(results.Contents).Should(Equal(expectedContents))
+					})
+
+					It("returns no error", func() {
+						Eventually(resultsChan).Should(Receive(&results))
+						Expect(results.Err).ShouldNot(HaveOccurred())
+					})
+				}
+
+				assertReturnsContentsWithError := func(expectedContents []contentstructs.NamedIgnoreContents, errorMatcher interface{}) {
+					It("returns the expected contents", func() {
+						Eventually(resultsChan).Should(Receive(&results))
+						Expect(results.Contents).Should(Equal(expectedContents))
+					})
+
+					It("returns the expected error", func() {
+						Eventually(resultsChan).Should(Receive(&results))
+						Expect(results.Err).Should(MatchError(errorMatcher))
+					})
+				}
+
+				BeforeEach(func() {
+					goResponseChan = make(chan bool)
+					anjutaResponseChan = make(chan bool)
+					resultsChan = make(chan contentsAndError)
+					server.RouteToHandler(
+						"GET",
+						"/api/v3/repos/github/gitignore/git/blobs/66fd13c903cac02eb9657cd53fb227823484401d",
+						ghttp.CombineHandlers(
+							ghttp.VerifyHeader(http.Header{
+								"User-Agent": expectedUserAgent,
+							}),
+							ghttp.VerifyHeader(http.Header{
+								"Accept": []string{"application/vnd.github.v3.raw"},
+							}),
+							func(w http.ResponseWriter, r *http.Request) { <-goResponseChan },
+							ghttp.RespondWithPtr(&goStatusCode, &goResponseBody),
+						),
+					)
+					server.RouteToHandler(
+						"GET",
+						"/api/v3/repos/github/gitignore/git/blobs/20dd42c53e6f0df8233fee457b664d443ee729f4",
+						ghttp.CombineHandlers(
+							ghttp.VerifyHeader(http.Header{
+								"User-Agent": expectedUserAgent,
+							}),
+							ghttp.VerifyHeader(http.Header{
+								"Accept": []string{"application/vnd.github.v3.raw"},
+							}),
+							func(w http.ResponseWriter, r *http.Request) { <-anjutaResponseChan },
+							ghttp.RespondWithPtr(&anjutaStatusCode, &anjutaResponseBody),
+						),
+					)
+				})
+
+				Context("the blob responses succeed", func() {
 					BeforeEach(func() {
-						goResponseChan = make(chan bool)
-						anjutaResponseChan = make(chan bool)
-						resultsChan = make(chan contentsAndError)
-						server.RouteToHandler(
-							"GET",
-							"/api/v3/repos/github/gitignore/git/blobs/66fd13c903cac02eb9657cd53fb227823484401d",
-							ghttp.CombineHandlers(
-								ghttp.VerifyHeader(http.Header{
-									"User-Agent": expectedUserAgent,
-								}),
-								ghttp.VerifyHeader(http.Header{
-									"Accept": []string{"application/vnd.github.v3.raw"},
-								}),
-								func(w http.ResponseWriter, r *http.Request) { <-goResponseChan },
-								ghttp.RespondWithPtr(&goStatusCode, &goResponseBody),
-							),
-						)
-						server.RouteToHandler(
-							"GET",
-							"/api/v3/repos/github/gitignore/git/blobs/20dd42c53e6f0df8233fee457b664d443ee729f4",
-							ghttp.CombineHandlers(
-								ghttp.VerifyHeader(http.Header{
-									"User-Agent": expectedUserAgent,
-								}),
-								ghttp.VerifyHeader(http.Header{
-									"Accept": []string{"application/vnd.github.v3.raw"},
-								}),
-								func(w http.ResponseWriter, r *http.Request) { <-anjutaResponseChan },
-								ghttp.RespondWithPtr(&anjutaStatusCode, &anjutaResponseBody),
-							),
+						goStatusCode = http.StatusOK
+						goResponseBody = "*.o\n*.a\n*.so\n"
+						anjutaStatusCode = http.StatusOK
+						anjutaResponseBody = "/.anjuta/\n/.anjuta_sym_db.db\n"
+					})
+
+					When("the Ajnuta response is slower", func() {
+						BeforeEach(func() {
+							go func() {
+								contents, err := getter.Get(ctx, []string{"Go.gitignore", "Global/Anjuta.gitignore"})
+								resultsChan <- contentsAndError{Contents: contents, Err: err}
+							}()
+							go func() {
+								goResponseChan <- true
+							}()
+							go func() {
+								time.Sleep(10 * time.Microsecond)
+								anjutaResponseChan <- true
+							}()
+						})
+
+						assertReturnsContentsWithoutError([]contentstructs.NamedIgnoreContents{
+							{
+								Name:     "Go.gitignore",
+								Contents: "*.o\n*.a\n*.so\n",
+							},
+							{
+								Name:     "Global/Anjuta.gitignore",
+								Contents: "/.anjuta/\n/.anjuta_sym_db.db\n",
+							},
+						})
+					})
+
+					When("the Go response is slower", func() {
+						BeforeEach(func() {
+							go func() {
+								contents, err := getter.Get(ctx, []string{"Go.gitignore", "Global/Anjuta.gitignore"})
+								resultsChan <- contentsAndError{Contents: contents, Err: err}
+							}()
+							go func() {
+								anjutaResponseChan <- true
+							}()
+							go func() {
+								time.Sleep(10 * time.Microsecond)
+								goResponseChan <- true
+							}()
+						})
+
+						assertReturnsContentsWithoutError([]contentstructs.NamedIgnoreContents{
+							{
+								Name:     "Go.gitignore",
+								Contents: "*.o\n*.a\n*.so\n",
+							},
+							{
+								Name:     "Global/Anjuta.gitignore",
+								Contents: "/.anjuta/\n/.anjuta_sym_db.db\n",
+							},
+						})
+					})
+				})
+
+				Context("the blob responses fail", func() {
+					When("the Go.gitignore response fails", func() {
+						BeforeEach(func() {
+							goStatusCode = http.StatusInternalServerError
+							anjutaStatusCode = http.StatusOK
+							anjutaResponseBody = "/.anjuta/\n/.anjuta_sym_db.db\n"
+
+							go func() {
+								contents, err := getter.Get(ctx, []string{"Go.gitignore", "Global/Anjuta.gitignore"})
+								resultsChan <- contentsAndError{Contents: contents, Err: err}
+							}()
+							go func() {
+								goResponseChan <- true
+							}()
+							go func() {
+								anjutaResponseChan <- true
+							}()
+						})
+						assertReturnsContentsWithError(
+							[]contentstructs.NamedIgnoreContents{
+								{
+									Name:     "Global/Anjuta.gitignore",
+									Contents: "/.anjuta/\n/.anjuta_sym_db.db\n",
+								},
+							},
+							HavePrefix("unable to retrieve the following sources:"),
 						)
 					})
 
-					Context("the blob responses succeed", func() {
+					When("the Anjuta.gitignore response fails", func() {
 						BeforeEach(func() {
 							goStatusCode = http.StatusOK
 							goResponseBody = "*.o\n*.a\n*.so\n"
-							anjutaStatusCode = http.StatusOK
-							anjutaResponseBody = "/.anjuta/\n/.anjuta_sym_db.db\n"
+							anjutaStatusCode = http.StatusInternalServerError
+
+							go func() {
+								contents, err := getter.Get(ctx, []string{"Go.gitignore", "Global/Anjuta.gitignore"})
+								resultsChan <- contentsAndError{Contents: contents, Err: err}
+							}()
+							go func() {
+								anjutaResponseChan <- true
+							}()
+							go func() {
+								goResponseChan <- true
+							}()
 						})
+						assertReturnsContentsWithError(
+							[]contentstructs.NamedIgnoreContents{
+								{
+									Name:     "Go.gitignore",
+									Contents: "*.o\n*.a\n*.so\n",
+								},
+							},
+							HavePrefix("unable to retrieve the following sources:"),
+						)
+					})
 
-						When("the Ajnuta response is slower", func() {
-							BeforeEach(func() {
-								go func() {
-									contents, err := getter.Get(ctx, []string{"Go.gitignore", "Global/Anjuta.gitignore"})
-									resultsChan <- contentsAndError{Contents: contents, Err: err}
-								}()
-								go func() {
-									goResponseChan <- true
-								}()
-								go func() {
-									time.Sleep(10 * time.Microsecond)
-									anjutaResponseChan <- true
-								}()
-							})
+					When("both responses fail", func() {
+						BeforeEach(func() {
+							goStatusCode = http.StatusInternalServerError
+							anjutaStatusCode = http.StatusInternalServerError
 
-							It("returns contents in the same order as names", func() {
-								Eventually(
-									func() []contentstructs.NamedIgnoreContents {
-										result := <-resultsChan
-										return result.Contents
-									},
-									"100ms",
-								).Should(Equal([]contentstructs.NamedIgnoreContents{
-									{
-										Name:     "Go.gitignore",
-										Contents: "*.o\n*.a\n*.so\n",
-									},
-									{
-										Name:     "Global/Anjuta.gitignore",
-										Contents: "/.anjuta/\n/.anjuta_sym_db.db\n",
-									},
-								}))
-							})
+							go func() {
+								contents, err := getter.Get(ctx, []string{"Go.gitignore", "Global/Anjuta.gitignore"})
+								resultsChan <- contentsAndError{Contents: contents, Err: err}
+							}()
+							go func() {
+								anjutaResponseChan <- true
+							}()
+							go func() {
+								goResponseChan <- true
+							}()
 						})
-
-						When("the Go response is slower", func() {
-							BeforeEach(func() {
-								go func() {
-									contents, err := getter.Get(ctx, []string{"Go.gitignore", "Global/Anjuta.gitignore"})
-									resultsChan <- contentsAndError{Contents: contents, Err: err}
-								}()
-								go func() {
-									anjutaResponseChan <- true
-								}()
-								go func() {
-									time.Sleep(10 * time.Microsecond)
-									goResponseChan <- true
-								}()
-							})
-
-							It("returns contents in the same order as names", func() {
-								Eventually(
-									func() []contentstructs.NamedIgnoreContents {
-										result := <-resultsChan
-										return result.Contents
-									},
-									"100ms",
-								).Should(Equal([]contentstructs.NamedIgnoreContents{
-									{
-										Name:     "Go.gitignore",
-										Contents: "*.o\n*.a\n*.so\n",
-									},
-									{
-										Name:     "Global/Anjuta.gitignore",
-										Contents: "/.anjuta/\n/.anjuta_sym_db.db\n",
-									},
-								}))
-							})
-						})
+						assertReturnsContentsWithError(
+							nil,
+							HavePrefix("unable to retrieve the following sources:"),
+						)
 					})
 				})
 			})

@@ -24,5 +24,5 @@ func (failedSources FailedSources) Error() string {
 		sourceErrors[i] = failedSource.Error()
 	}
 	stringOfErrors := strings.Join(sourceErrors, "\n")
-	return "Errors retrieving the following sources:\n" + stringOfErrors
+	return "unable to retrieve the following sources:\n" + stringOfErrors
 }
