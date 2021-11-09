@@ -670,6 +670,43 @@ var _ = Describe("Getter", func() {
 							},
 						})
 					})
+
+					When("requested files are not present in tree", func() {
+						BeforeEach(func() {
+							go func() {
+								contents, err := getter.Get(
+									ctx,
+									[]string{
+										"Go.gitignore",
+										"Nonexistent.gitignore",
+										"Global/Anjuta.gitignore",
+										"Global/Nonexistent.gitignore",
+									},
+								)
+								resultsChan <- contentsAndError{Contents: contents, Err: err}
+							}()
+							go func() {
+								goResponseChan <- true
+							}()
+							go func() {
+								anjutaResponseChan <- true
+							}()
+						})
+
+						assertReturnsContentsWithError(
+							[]contentstructs.NamedIgnoreContents{
+								{
+									Name:     "Go.gitignore",
+									Contents: "*.o\n*.a\n*.so\n",
+								},
+								{
+									Name:     "Global/Anjuta.gitignore",
+									Contents: "/.anjuta/\n/.anjuta_sym_db.db\n",
+								},
+							},
+							HavePrefix("unable to retrieve the following sources:"),
+						)
+					})
 				})
 
 				Context("the blob responses fail", func() {

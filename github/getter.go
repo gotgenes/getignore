@@ -153,6 +153,13 @@ func (g Getter) Get(ctx context.Context, names []string) ([]contentstructs.Named
 					Contents: string(contents),
 				})
 			}
+		} else {
+			err := fmt.Errorf("not present in repository %s/%s on branch %s", g.Owner, g.Repository, g.Branch)
+			failedSource := errors.FailedSource{
+				Source: name,
+				Err:    err,
+			}
+			failedSources = append(failedSources, failedSource)
 		}
 	}
 	return namedContents, failedSources
