@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"runtime"
 	"strings"
 
 	"github.com/google/go-github/v39/github"
@@ -13,32 +14,38 @@ import (
 	"github.com/gotgenes/getignore/identifiers"
 )
 
+// DefaultMaxRequests is the default maximum number of concurrent requests
+var DefaultMaxRequests = runtime.NumCPU() - 1
+
 // Getter lists ignore files using the GitHub tree API.
 type Getter struct {
-	client     *github.Client
-	BaseURL    string
-	Owner      string
-	Repository string
-	Branch     string
-	Suffix     string
+	client      *github.Client
+	BaseURL     string
+	Owner       string
+	Repository  string
+	Branch      string
+	Suffix      string
+	MaxRequests int
 }
 
 // gitHubListerParams holds parameters for instantiating a GitHubLister
 type gitHubListerParams struct {
-	client     *http.Client
-	baseURL    string
-	owner      string
-	repository string
-	branch     string
-	suffix     string
+	client      *http.Client
+	baseURL     string
+	owner       string
+	repository  string
+	branch      string
+	suffix      string
+	maxRequests int
 }
 
 func NewGetter(options ...GitHubListerOption) (Getter, error) {
 	params := &gitHubListerParams{
-		owner:      Owner,
-		repository: Repository,
-		branch:     Branch,
-		suffix:     Suffix,
+		owner:       Owner,
+		repository:  Repository,
+		branch:      Branch,
+		suffix:      Suffix,
+		maxRequests: DefaultMaxRequests,
 	}
 	for _, option := range options {
 		option(params)
@@ -58,12 +65,13 @@ func NewGetter(options ...GitHubListerOption) (Getter, error) {
 	userAgentString := fmt.Sprintf(userAgentTemplate, identifiers.Version)
 	ghClient.UserAgent = userAgentString
 	return Getter{
-		client:     ghClient,
-		BaseURL:    params.baseURL,
-		Owner:      params.owner,
-		Repository: params.repository,
-		Branch:     params.branch,
-		Suffix:     params.suffix,
+		client:      ghClient,
+		BaseURL:     params.baseURL,
+		Owner:       params.owner,
+		Repository:  params.repository,
+		Branch:      params.branch,
+		Suffix:      params.suffix,
+		MaxRequests: params.maxRequests,
 	}, nil
 }
 
@@ -108,6 +116,13 @@ func WithBranch(branch string) GitHubListerOption {
 func WithSuffix(suffix string) GitHubListerOption {
 	return func(p *gitHubListerParams) {
 		p.suffix = suffix
+	}
+}
+
+// WithMaxRequests sets the number of maximum concurrent HTTP requests
+func WithMaxRequests(max int) GitHubListerOption {
+	return func(p *gitHubListerParams) {
+		p.maxRequests = max
 	}
 }
 
