@@ -2,13 +2,14 @@ package github
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/google/go-github/v39/github"
 	"github.com/gotgenes/getignore/contentstructs"
-	"github.com/gotgenes/getignore/errors"
+	gierrors "github.com/gotgenes/getignore/errors"
 	"github.com/gotgenes/getignore/identifiers"
 )
 
@@ -114,7 +115,7 @@ func WithSuffix(suffix string) GitHubListerOption {
 func (g Getter) List(ctx context.Context) ([]string, error) {
 	tree, err := g.getTree(ctx)
 	if err != nil {
-		return nil, err
+		return nil, g.newListError(err)
 	}
 	entries := g.filterTreeEntries(tree.Entries)
 	var files []string
@@ -127,7 +128,7 @@ func (g Getter) List(ctx context.Context) ([]string, error) {
 func (g Getter) Get(ctx context.Context, names []string) ([]contentstructs.NamedIgnoreContents, error) {
 	tree, err := g.getTree(ctx)
 	if err != nil {
-		return nil, err
+		return nil, g.newGetError(err)
 	}
 	var namedContents []contentstructs.NamedIgnoreContents
 	pathsToSHAs := make(map[string]string)
@@ -136,17 +137,18 @@ func (g Getter) Get(ctx context.Context, names []string) ([]contentstructs.Named
 			pathsToSHAs[path] = entry.GetSHA()
 		}
 	}
-	var failedSources errors.FailedSources
+	var failedFiles gierrors.FailedFiles
 	for _, name := range names {
 		sha, ok := pathsToSHAs[name]
 		if ok {
 			contents, _, err := g.client.Git.GetBlobRaw(ctx, g.Owner, g.Repository, sha)
 			if err != nil {
-				failedSource := errors.FailedSource{
-					Source: name,
-					Err:    err,
+				failedSource := gierrors.FailedFile{
+					Name:    name,
+					Message: "failed to download",
+					Err:     err,
 				}
-				failedSources = append(failedSources, failedSource)
+				failedFiles = append(failedFiles, failedSource)
 			} else {
 				namedContents = append(namedContents, contentstructs.NamedIgnoreContents{
 					Name:     name,
@@ -154,46 +156,39 @@ func (g Getter) Get(ctx context.Context, names []string) ([]contentstructs.Named
 				})
 			}
 		} else {
-			err := fmt.Errorf("not present in repository %s/%s on branch %s", g.Owner, g.Repository, g.Branch)
-			failedSource := errors.FailedSource{
-				Source: name,
-				Err:    err,
+			failedFile := gierrors.FailedFile{
+				Name:    name,
+				Message: "not present in file tree",
 			}
-			failedSources = append(failedSources, failedSource)
+			failedFiles = append(failedFiles, failedFile)
 		}
 	}
-	return namedContents, failedSources
+	if failedFiles != nil {
+		err = g.newGetError(failedFiles)
+	}
+	return namedContents, err
+}
+
+func (g Getter) newListError(err error) error {
+	return fmt.Errorf("error listing contents of %s/%s at %s: %w", g.Owner, g.Repository, g.Branch, err)
+}
+
+func (g Getter) newGetError(err error) error {
+	return fmt.Errorf("error getting files from %s/%s at %s: %w", g.Owner, g.Repository, g.Branch, err)
 }
 
 func (g Getter) getTree(ctx context.Context) (*github.Tree, error) {
 	branch, _, err := g.client.Repositories.GetBranch(ctx, g.Owner, g.Repository, g.Branch, true)
 	if err != nil {
-		return nil, fmt.Errorf(
-			"unable to get branch information for %s/%s at %s: %w",
-			g.Owner,
-			g.Repository,
-			g.Branch,
-			err,
-		)
+		return nil, errors.New("unable to get branch information")
 	}
 	sha := branch.GetCommit().GetCommit().GetTree().GetSHA()
 	if sha == "" {
-		return nil, fmt.Errorf(
-			"no branch information received for %s/%s at %s",
-			g.Owner,
-			g.Repository,
-			g.Branch,
-		)
+		return nil, errors.New("no branch information received")
 	}
 	tree, _, err := g.client.Git.GetTree(ctx, g.Owner, g.Repository, sha, true)
 	if err != nil {
-		return nil, fmt.Errorf(
-			"unable to get tree information for %s/%s at %s: %w",
-			g.Owner,
-			g.Repository,
-			g.Branch,
-			err,
-		)
+		return nil, errors.New("unable to get tree information")
 	}
 	return tree, nil
 }

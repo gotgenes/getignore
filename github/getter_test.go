@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
+	"github.com/onsi/gomega/types"
 )
 
 type contentsAndError struct {
@@ -50,7 +51,7 @@ var _ = Describe("Getter", func() {
 					Expect(ignoreFiles).Should(Equal(expectedFiles))
 				})
 
-				It("should not have an error", func() {
+				It("should not return an error", func() {
 					_, err := getter.List(ctx)
 					Expect(err).ShouldNot(HaveOccurred())
 				})
@@ -273,10 +274,15 @@ var _ = Describe("Getter", func() {
 		})
 
 		Context("server errors", func() {
-			assertReturnsError := func(errorMatcher interface{}) {
-				It("should return an error", func() {
+			assertReturnsError := func(errorMatcher types.GomegaMatcher) {
+				It("should return the expected error", func() {
 					_, err := getter.List(ctx)
-					Expect(err).Should(MatchError(errorMatcher))
+					Expect(err).Should(
+						MatchError(And(
+							HavePrefix("error listing contents of github/gitignore at master:"),
+							errorMatcher,
+						)),
+					)
 				})
 
 				It("should not return any files", func() {
@@ -301,7 +307,7 @@ var _ = Describe("Getter", func() {
 					)
 				})
 
-				assertReturnsError("no branch information received for github/gitignore at master")
+				assertReturnsError(ContainSubstring("no branch information received"))
 			})
 
 			When("the branches endpoint errors", func() {
@@ -320,7 +326,7 @@ var _ = Describe("Getter", func() {
 					)
 				})
 
-				assertReturnsError(HavePrefix("unable to get branch information for github/gitignore at master"))
+				assertReturnsError(ContainSubstring("unable to get branch information"))
 			})
 
 			When("the trees endpoint errors", func() {
@@ -360,7 +366,7 @@ var _ = Describe("Getter", func() {
 					)
 				})
 
-				assertReturnsError(HavePrefix("unable to get tree information for github/gitignore at master"))
+				assertReturnsError(ContainSubstring("unable to get tree information"))
 			})
 		})
 	})
@@ -527,7 +533,7 @@ var _ = Describe("Getter", func() {
 
 					It("should return an error", func() {
 						_, err := getter.Get(ctx, []string{"Go.gitignore"})
-						Expect(err).Should(MatchError(HavePrefix("unable to retrieve the following sources:")))
+						Expect(err).Should(MatchError("error getting files from github/gitignore at master: failed to get the following files: Go.gitignore\nGo.gitignore: failed to download\n"))
 					})
 
 					It("should return empty contents", func() {
@@ -563,7 +569,7 @@ var _ = Describe("Getter", func() {
 					})
 				}
 
-				assertReturnsContentsWithError := func(expectedContents []contentstructs.NamedIgnoreContents, errorMatcher interface{}) {
+				assertReturnsContentsWithError := func(expectedContents []contentstructs.NamedIgnoreContents, errorMatchers ...types.GomegaMatcher) {
 					It("returns the expected contents", func() {
 						Eventually(resultsChan).Should(Receive(&results))
 						Expect(results.Contents).Should(Equal(expectedContents))
@@ -571,7 +577,8 @@ var _ = Describe("Getter", func() {
 
 					It("returns the expected error", func() {
 						Eventually(resultsChan).Should(Receive(&results))
-						Expect(results.Err).Should(MatchError(errorMatcher))
+						errorMatchers = append(errorMatchers, HavePrefix("error getting files from github/gitignore at master:"))
+						Expect(results.Err).Should(MatchError(And(errorMatchers...)))
 					})
 				}
 
@@ -704,7 +711,8 @@ var _ = Describe("Getter", func() {
 									Contents: "/.anjuta/\n/.anjuta_sym_db.db\n",
 								},
 							},
-							HavePrefix("unable to retrieve the following sources:"),
+							ContainSubstring("Nonexistent.gitignore: not present in file tree"),
+							ContainSubstring("Global/Nonexistent.gitignore: not present in file tree"),
 						)
 					})
 				})
@@ -734,7 +742,7 @@ var _ = Describe("Getter", func() {
 									Contents: "/.anjuta/\n/.anjuta_sym_db.db\n",
 								},
 							},
-							HavePrefix("unable to retrieve the following sources:"),
+							ContainSubstring("Go.gitignore: failed to download"),
 						)
 					})
 
@@ -762,7 +770,7 @@ var _ = Describe("Getter", func() {
 									Contents: "*.o\n*.a\n*.so\n",
 								},
 							},
-							HavePrefix("unable to retrieve the following sources:"),
+							ContainSubstring("Global/Anjuta.gitignore: failed to download"),
 						)
 					})
 
@@ -784,7 +792,8 @@ var _ = Describe("Getter", func() {
 						})
 						assertReturnsContentsWithError(
 							nil,
-							HavePrefix("unable to retrieve the following sources:"),
+							ContainSubstring("Go.gitignore: failed to download"),
+							ContainSubstring("Global/Anjuta.gitignore: failed to download"),
 						)
 					})
 				})
@@ -792,10 +801,13 @@ var _ = Describe("Getter", func() {
 		})
 
 		Context("server errors", func() {
-			assertReturnsError := func(errorMatcher interface{}) {
+			assertReturnsError := func(errorMatcher types.GomegaMatcher) {
 				It("should return an error", func() {
 					_, err := getter.Get(ctx, []string{"Go.gitignore"})
-					Expect(err).Should(MatchError(errorMatcher))
+					Expect(err).Should(MatchError(And(
+						HavePrefix("error getting files from github/gitignore at master:"),
+						errorMatcher,
+					)))
 				})
 
 				It("should not return any files", func() {
@@ -820,7 +832,7 @@ var _ = Describe("Getter", func() {
 					)
 				})
 
-				assertReturnsError("no branch information received for github/gitignore at master")
+				assertReturnsError(ContainSubstring("no branch information received"))
 			})
 
 			When("the branches endpoint errors", func() {
@@ -839,7 +851,7 @@ var _ = Describe("Getter", func() {
 					)
 				})
 
-				assertReturnsError(HavePrefix("unable to get branch information for github/gitignore at master"))
+				assertReturnsError(ContainSubstring("unable to get branch information"))
 			})
 
 			When("the trees endpoint errors", func() {
@@ -879,7 +891,7 @@ var _ = Describe("Getter", func() {
 					)
 				})
 
-				assertReturnsError(HavePrefix("unable to get tree information for github/gitignore at master"))
+				assertReturnsError(ContainSubstring("unable to get tree information"))
 			})
 		})
 	})
