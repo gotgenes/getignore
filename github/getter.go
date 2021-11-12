@@ -19,7 +19,7 @@ import (
 // DefaultMaxRequests is the default maximum number of concurrent requests
 var DefaultMaxRequests = runtime.NumCPU() - 1
 
-// Getter lists ignore files using the GitHub tree API.
+// Getter lists and gets files using the GitHub tree API.
 type Getter struct {
 	client      *github.Client
 	BaseURL     string
@@ -30,8 +30,8 @@ type Getter struct {
 	MaxRequests int
 }
 
-// gitHubListerParams holds parameters for instantiating a GitHubLister
-type gitHubListerParams struct {
+// getterParams holds parameters for instantiating a Getter
+type getterParams struct {
 	client      *http.Client
 	baseURL     string
 	owner       string
@@ -41,8 +41,8 @@ type gitHubListerParams struct {
 	maxRequests int
 }
 
-func NewGetter(options ...GitHubListerOption) (Getter, error) {
-	params := &gitHubListerParams{
+func NewGetter(options ...GetterOption) (Getter, error) {
+	params := &getterParams{
 		owner:       Owner,
 		repository:  Repository,
 		branch:      Branch,
@@ -77,53 +77,53 @@ func NewGetter(options ...GitHubListerOption) (Getter, error) {
 	}, nil
 }
 
-type GitHubListerOption func(*gitHubListerParams)
+type GetterOption func(*getterParams)
 
-// WithClient sets the HTTP client for the GitHubLister
-func WithClient(client *http.Client) GitHubListerOption {
-	return func(p *gitHubListerParams) {
+// WithClient sets the HTTP client for the Getter
+func WithClient(client *http.Client) GetterOption {
+	return func(p *getterParams) {
 		p.client = client
 	}
 }
 
-// WithBaseURL sets the base URL for the GitHubLister
-func WithBaseURL(baseURL string) GitHubListerOption {
-	return func(p *gitHubListerParams) {
+// WithBaseURL sets the base URL for the Getter
+func WithBaseURL(baseURL string) GetterOption {
+	return func(p *getterParams) {
 		p.baseURL = baseURL
 	}
 }
 
-// WithOwner sets the owner or organization name for the GitHubLister
-func WithOwner(owner string) GitHubListerOption {
-	return func(p *gitHubListerParams) {
+// WithOwner sets the owner or organization name for the Getter
+func WithOwner(owner string) GetterOption {
+	return func(p *getterParams) {
 		p.owner = owner
 	}
 }
 
-// WithRepository sets the repository name for the GitHubLister
-func WithRepository(repository string) GitHubListerOption {
-	return func(p *gitHubListerParams) {
+// WithRepository sets the repository name for the Getter
+func WithRepository(repository string) GetterOption {
+	return func(p *getterParams) {
 		p.repository = repository
 	}
 }
 
-// WithBranch sets the branch name for the GitHubLister
-func WithBranch(branch string) GitHubListerOption {
-	return func(p *gitHubListerParams) {
+// WithBranch sets the branch name for the Getter
+func WithBranch(branch string) GetterOption {
+	return func(p *getterParams) {
 		p.branch = branch
 	}
 }
 
 // WithSuffix sets the suffix to filter ignore files for
-func WithSuffix(suffix string) GitHubListerOption {
-	return func(p *gitHubListerParams) {
+func WithSuffix(suffix string) GetterOption {
+	return func(p *getterParams) {
 		p.suffix = suffix
 	}
 }
 
 // WithMaxRequests sets the number of maximum concurrent HTTP requests
-func WithMaxRequests(max int) GitHubListerOption {
-	return func(p *gitHubListerParams) {
+func WithMaxRequests(max int) GetterOption {
+	return func(p *getterParams) {
 		p.maxRequests = max
 	}
 }

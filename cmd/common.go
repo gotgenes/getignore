@@ -37,7 +37,7 @@ var commonFlags = []cli.Flag{
 	},
 }
 
-var stringFlagsToOptions = map[string]func(string) github.GitHubListerOption{
+var stringFlagsToOptions = map[string]func(string) github.GetterOption{
 	"base-url":   github.WithBaseURL,
 	"owner":      github.WithOwner,
 	"repository": github.WithRepository,
@@ -46,7 +46,7 @@ var stringFlagsToOptions = map[string]func(string) github.GitHubListerOption{
 }
 
 func newGithubGetter(c *cli.Context) (github.Getter, error) {
-	var opts []github.GitHubListerOption
+	var opts []github.GetterOption
 	for _, flagName := range c.FlagNames() {
 		if flagName == "max-requests" {
 			opts = append(opts, github.WithMaxRequests(c.Int(flagName)))
