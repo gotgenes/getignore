@@ -1,4 +1,4 @@
-package list
+package cmd
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var Command = &cli.Command{
+var List = &cli.Command{
 	Name:  "list",
 	Usage: "Retrieves and prints a list of available ignore files",
 	Flags: []cli.Flag{

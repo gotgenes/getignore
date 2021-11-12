@@ -9,9 +9,9 @@ import (
 
 	"github.com/urfave/cli/v2"
 
+	"github.com/gotgenes/getignore/cmd"
 	"github.com/gotgenes/getignore/getters"
 	"github.com/gotgenes/getignore/identifiers"
-	"github.com/gotgenes/getignore/list"
 	"github.com/gotgenes/getignore/writers"
 )
 
@@ -67,7 +67,7 @@ func creatCLI() *cli.App {
 			ArgsUsage: "[gitignore_name] [gitignore_name …]",
 			Action:    downloadAllIgnoreFiles,
 		},
-		list.Command,
+		cmd.List,
 	}
 
 	return app
