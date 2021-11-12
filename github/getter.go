@@ -142,20 +142,21 @@ func (g Getter) List(ctx context.Context) ([]string, error) {
 	return files, nil
 }
 
-func (g Getter) Get(ctx context.Context, names []string) ([]contentstructs.NamedIgnoreContents, error) {
+// Get returns an array of contents of the files downloaded from the given paths
+func (g Getter) Get(ctx context.Context, paths []string) ([]contentstructs.NamedIgnoreContents, error) {
 	tree, err := g.getTree(ctx)
 	if err != nil {
 		return nil, g.newGetError(err)
 	}
 	pathsToSHAs := createPathsToSHAs(tree.Entries)
 
-	numNames := len(names)
-	namesChan, contentsChan, failedFilesChan := g.startDownloaders(ctx, numNames, pathsToSHAs)
+	numPaths := len(paths)
+	namesChan, contentsChan, failedFilesChan := g.startDownloaders(ctx, numPaths, pathsToSHAs)
 
-	namesOrdering := createNamesOrdering(names)
+	namesOrdering := createPathsOrdering(paths)
 	wg, outputChan, errorsChan := startProcessors(namesOrdering, contentsChan, failedFilesChan)
 
-	for _, name := range names {
+	for _, name := range paths {
 		namesChan <- name
 		wg.Add(1)
 	}
@@ -265,7 +266,7 @@ func min(x int, y int) int {
 	return y
 }
 
-func createNamesOrdering(names []string) map[string]int {
+func createPathsOrdering(names []string) map[string]int {
 	namesOrdering := make(map[string]int)
 	for i, name := range names {
 		namesOrdering[name] = i
