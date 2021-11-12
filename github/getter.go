@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"net/http"
 	"runtime"
+	"sort"
 	"strings"
+	"sync"
 
 	"github.com/google/go-github/v39/github"
 	"github.com/gotgenes/getignore/contentstructs"
@@ -145,43 +147,58 @@ func (g Getter) Get(ctx context.Context, names []string) ([]contentstructs.Named
 	if err != nil {
 		return nil, g.newGetError(err)
 	}
-	var namedContents []contentstructs.NamedIgnoreContents
-	pathsToSHAs := make(map[string]string)
-	for _, entry := range tree.Entries {
-		if path := entry.GetPath(); path != "" {
-			pathsToSHAs[path] = entry.GetSHA()
-		}
-	}
-	var failedFiles gierrors.FailedFiles
+	pathsToSHAs := createPathsToSHAs(tree.Entries)
+
+	numNames := len(names)
+	namesChan, contentsChan, failedFilesChan := g.startDownloaders(ctx, numNames, pathsToSHAs)
+
+	namesOrdering := createNamesOrdering(names)
+	wg, outputChan, errorsChan := startProcessors(namesOrdering, contentsChan, failedFilesChan)
+
 	for _, name := range names {
+		namesChan <- name
+		wg.Add(1)
+	}
+	wg.Wait()
+	close(namesChan)
+	close(contentsChan)
+	close(failedFilesChan)
+
+	namedContents := <-outputChan
+	failedFiles := <-errorsChan
+	if failedFiles != nil {
+		err = g.newGetError(failedFiles)
+	}
+	return namedContents, err
+}
+
+func (g Getter) getBlob(ctx context.Context, pathsToSHAs map[string]string, namesChan chan string, contentsChan chan contentstructs.NamedIgnoreContents, failedFilesChan chan gierrors.FailedFile) {
+	for name := range namesChan {
 		sha, ok := pathsToSHAs[name]
 		if ok {
 			contents, _, err := g.client.Git.GetBlobRaw(ctx, g.Owner, g.Repository, sha)
 			if err != nil {
-				failedSource := gierrors.FailedFile{
+				failedFile := gierrors.FailedFile{
 					Name:    name,
 					Message: "failed to download",
 					Err:     err,
 				}
-				failedFiles = append(failedFiles, failedSource)
+				failedFilesChan <- failedFile
 			} else {
-				namedContents = append(namedContents, contentstructs.NamedIgnoreContents{
+				contents := contentstructs.NamedIgnoreContents{
 					Name:     name,
 					Contents: string(contents),
-				})
+				}
+				contentsChan <- contents
 			}
 		} else {
 			failedFile := gierrors.FailedFile{
 				Name:    name,
 				Message: "not present in file tree",
 			}
-			failedFiles = append(failedFiles, failedFile)
+			failedFilesChan <- failedFile
 		}
 	}
-	if failedFiles != nil {
-		err = g.newGetError(failedFiles)
-	}
-	return namedContents, err
 }
 
 func (g Getter) newListError(err error) error {
@@ -218,4 +235,85 @@ func (g Getter) filterTreeEntries(treeEntries []*github.TreeEntry) []*github.Tre
 		}
 	}
 	return entries
+}
+
+func (g Getter) startDownloaders(ctx context.Context, numFilesToDownload int, pathsToSHAs map[string]string) (chan string, chan contentstructs.NamedIgnoreContents, chan gierrors.FailedFile) {
+	namesChan := make(chan string, numFilesToDownload)
+	maxRequests := min(numFilesToDownload, g.MaxRequests)
+	contentsChan := make(chan contentstructs.NamedIgnoreContents, numFilesToDownload)
+	failedFilesChan := make(chan gierrors.FailedFile, numFilesToDownload)
+	for i := 0; i < maxRequests; i++ {
+		go g.getBlob(ctx, pathsToSHAs, namesChan, contentsChan, failedFilesChan)
+	}
+	return namesChan, contentsChan, failedFilesChan
+}
+
+func createPathsToSHAs(entries []*github.TreeEntry) map[string]string {
+	pathsToSHAs := make(map[string]string)
+	for _, entry := range entries {
+		if path := entry.GetPath(); path != "" {
+			pathsToSHAs[path] = entry.GetSHA()
+		}
+	}
+	return pathsToSHAs
+}
+
+func min(x int, y int) int {
+	if x <= y {
+		return x
+	}
+	return y
+}
+
+func createNamesOrdering(names []string) map[string]int {
+	namesOrdering := make(map[string]int)
+	for i, name := range names {
+		namesOrdering[name] = i
+	}
+	return namesOrdering
+}
+
+func startProcessors(namesOrdering map[string]int, contentsChan chan contentstructs.NamedIgnoreContents, failedFilesChan chan gierrors.FailedFile) (*sync.WaitGroup, chan []contentstructs.NamedIgnoreContents, chan gierrors.FailedFiles) {
+	var wg sync.WaitGroup
+	outputChan := make(chan []contentstructs.NamedIgnoreContents)
+	errorsChan := make(chan gierrors.FailedFiles)
+	go processContents(contentsChan, namesOrdering, outputChan, &wg)
+	go processErrors(failedFilesChan, errorsChan, &wg)
+	return &wg, outputChan, errorsChan
+}
+
+func processContents(contentsChan chan contentstructs.NamedIgnoreContents, namesOrdering map[string]int, outputChannel chan []contentstructs.NamedIgnoreContents, wg *sync.WaitGroup) {
+	var allRetrievedContents []contentstructs.NamedIgnoreContents
+	for contents := range contentsChan {
+		allRetrievedContents = append(allRetrievedContents, contents)
+		wg.Done()
+	}
+	sort.Sort(&contentsWithOrdering{contents: allRetrievedContents, ordering: namesOrdering})
+	outputChannel <- allRetrievedContents
+}
+
+type contentsWithOrdering struct {
+	contents []contentstructs.NamedIgnoreContents
+	ordering map[string]int
+}
+
+func (cwo *contentsWithOrdering) Len() int {
+	return len(cwo.contents)
+}
+
+func (cwo *contentsWithOrdering) Swap(i, j int) {
+	cwo.contents[i], cwo.contents[j] = cwo.contents[j], cwo.contents[i]
+}
+
+func (cwo *contentsWithOrdering) Less(i, j int) bool {
+	return cwo.ordering[cwo.contents[i].Name] < cwo.ordering[cwo.contents[j].Name]
+}
+
+func processErrors(failedFilesChan chan gierrors.FailedFile, errorsChan chan gierrors.FailedFiles, wg *sync.WaitGroup) {
+	var failedFiles gierrors.FailedFiles
+	for failedFile := range failedFilesChan {
+		failedFiles = append(failedFiles, failedFile)
+		wg.Done()
+	}
+	errorsChan <- failedFiles
 }
