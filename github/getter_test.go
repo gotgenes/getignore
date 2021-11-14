@@ -16,7 +16,7 @@ import (
 )
 
 type contentsAndError struct {
-	Contents []contentstructs.NamedIgnoreContents
+	Contents []contentstructs.NamedContents
 	Err      error
 }
 
@@ -511,7 +511,7 @@ var _ = Describe("Getter", func() {
 
 					It("returns contents when it matches a name", func() {
 						contents, _ := getter.Get(ctx, []string{"Go.gitignore"})
-						Expect(contents).To(Equal([]contentstructs.NamedIgnoreContents{
+						Expect(contents).To(Equal([]contentstructs.NamedContents{
 							{
 								Name:     "Go.gitignore",
 								Contents: "*.o\n*.a\n*.so\n",
@@ -557,7 +557,7 @@ var _ = Describe("Getter", func() {
 					results     contentsAndError
 				)
 
-				assertReturnsContentsWithoutError := func(expectedContents []contentstructs.NamedIgnoreContents) {
+				assertReturnsContentsWithoutError := func(expectedContents []contentstructs.NamedContents) {
 					It("returns the expected contents", func() {
 						Eventually(resultsChan).Should(Receive(&results))
 						Expect(results.Contents).Should(Equal(expectedContents))
@@ -569,7 +569,7 @@ var _ = Describe("Getter", func() {
 					})
 				}
 
-				assertReturnsContentsWithError := func(expectedContents []contentstructs.NamedIgnoreContents, errorMatchers ...types.GomegaMatcher) {
+				assertReturnsContentsWithError := func(expectedContents []contentstructs.NamedContents, errorMatchers ...types.GomegaMatcher) {
 					It("returns the expected contents", func() {
 						Eventually(resultsChan).Should(Receive(&results))
 						Expect(results.Contents).Should(Equal(expectedContents))
@@ -639,7 +639,7 @@ var _ = Describe("Getter", func() {
 							}()
 						})
 
-						assertReturnsContentsWithoutError([]contentstructs.NamedIgnoreContents{
+						assertReturnsContentsWithoutError([]contentstructs.NamedContents{
 							{
 								Name:     "Go.gitignore",
 								Contents: "*.o\n*.a\n*.so\n",
@@ -666,7 +666,7 @@ var _ = Describe("Getter", func() {
 							}()
 						})
 
-						assertReturnsContentsWithoutError([]contentstructs.NamedIgnoreContents{
+						assertReturnsContentsWithoutError([]contentstructs.NamedContents{
 							{
 								Name:     "Go.gitignore",
 								Contents: "*.o\n*.a\n*.so\n",
@@ -701,7 +701,7 @@ var _ = Describe("Getter", func() {
 						})
 
 						assertReturnsContentsWithError(
-							[]contentstructs.NamedIgnoreContents{
+							[]contentstructs.NamedContents{
 								{
 									Name:     "Go.gitignore",
 									Contents: "*.o\n*.a\n*.so\n",
@@ -736,7 +736,7 @@ var _ = Describe("Getter", func() {
 							}()
 						})
 						assertReturnsContentsWithError(
-							[]contentstructs.NamedIgnoreContents{
+							[]contentstructs.NamedContents{
 								{
 									Name:     "Global/Anjuta.gitignore",
 									Contents: "/.anjuta/\n/.anjuta_sym_db.db\n",
@@ -764,7 +764,7 @@ var _ = Describe("Getter", func() {
 							}()
 						})
 						assertReturnsContentsWithError(
-							[]contentstructs.NamedIgnoreContents{
+							[]contentstructs.NamedContents{
 								{
 									Name:     "Go.gitignore",
 									Contents: "*.o\n*.a\n*.so\n",

@@ -10,7 +10,7 @@ import (
 )
 
 // WriteIgnoreFile writes contents to a gitignore file
-func WriteIgnoreFile(ignoreFile io.Writer, allContents []contentstructs.NamedIgnoreContents) (err error) {
+func WriteIgnoreFile(ignoreFile io.Writer, allContents []contentstructs.NamedContents) (err error) {
 	writer := bufio.NewWriter(ignoreFile)
 	for i, nc := range allContents {
 		if i > 0 {

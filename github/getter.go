@@ -143,7 +143,7 @@ func (g Getter) List(ctx context.Context) ([]string, error) {
 }
 
 // Get returns an array of contents of the files downloaded from the given paths
-func (g Getter) Get(ctx context.Context, paths []string) ([]contentstructs.NamedIgnoreContents, error) {
+func (g Getter) Get(ctx context.Context, paths []string) ([]contentstructs.NamedContents, error) {
 	tree, err := g.getTree(ctx)
 	if err != nil {
 		return nil, g.newGetError(err)
@@ -173,7 +173,7 @@ func (g Getter) Get(ctx context.Context, paths []string) ([]contentstructs.Named
 	return namedContents, err
 }
 
-func (g Getter) getBlob(ctx context.Context, pathsToSHAs map[string]string, namesChan chan string, contentsChan chan contentstructs.NamedIgnoreContents, failedFilesChan chan gierrors.FailedFile) {
+func (g Getter) getBlob(ctx context.Context, pathsToSHAs map[string]string, namesChan chan string, contentsChan chan contentstructs.NamedContents, failedFilesChan chan gierrors.FailedFile) {
 	for name := range namesChan {
 		sha, ok := pathsToSHAs[name]
 		if ok {
@@ -186,7 +186,7 @@ func (g Getter) getBlob(ctx context.Context, pathsToSHAs map[string]string, name
 				}
 				failedFilesChan <- failedFile
 			} else {
-				contents := contentstructs.NamedIgnoreContents{
+				contents := contentstructs.NamedContents{
 					Name:     name,
 					Contents: string(contents),
 				}
@@ -238,10 +238,10 @@ func (g Getter) filterTreeEntries(treeEntries []*github.TreeEntry) []*github.Tre
 	return entries
 }
 
-func (g Getter) startDownloaders(ctx context.Context, numFilesToDownload int, pathsToSHAs map[string]string) (chan string, chan contentstructs.NamedIgnoreContents, chan gierrors.FailedFile) {
+func (g Getter) startDownloaders(ctx context.Context, numFilesToDownload int, pathsToSHAs map[string]string) (chan string, chan contentstructs.NamedContents, chan gierrors.FailedFile) {
 	namesChan := make(chan string, numFilesToDownload)
 	maxRequests := min(numFilesToDownload, g.MaxRequests)
-	contentsChan := make(chan contentstructs.NamedIgnoreContents, numFilesToDownload)
+	contentsChan := make(chan contentstructs.NamedContents, numFilesToDownload)
 	failedFilesChan := make(chan gierrors.FailedFile, numFilesToDownload)
 	for i := 0; i < maxRequests; i++ {
 		go g.getBlob(ctx, pathsToSHAs, namesChan, contentsChan, failedFilesChan)
@@ -274,17 +274,17 @@ func createPathsOrdering(names []string) map[string]int {
 	return namesOrdering
 }
 
-func startProcessors(namesOrdering map[string]int, contentsChan chan contentstructs.NamedIgnoreContents, failedFilesChan chan gierrors.FailedFile) (*sync.WaitGroup, chan []contentstructs.NamedIgnoreContents, chan gierrors.FailedFiles) {
+func startProcessors(namesOrdering map[string]int, contentsChan chan contentstructs.NamedContents, failedFilesChan chan gierrors.FailedFile) (*sync.WaitGroup, chan []contentstructs.NamedContents, chan gierrors.FailedFiles) {
 	var wg sync.WaitGroup
-	outputChan := make(chan []contentstructs.NamedIgnoreContents)
+	outputChan := make(chan []contentstructs.NamedContents)
 	errorsChan := make(chan gierrors.FailedFiles)
 	go processContents(contentsChan, namesOrdering, outputChan, &wg)
 	go processErrors(failedFilesChan, errorsChan, &wg)
 	return &wg, outputChan, errorsChan
 }
 
-func processContents(contentsChan chan contentstructs.NamedIgnoreContents, namesOrdering map[string]int, outputChannel chan []contentstructs.NamedIgnoreContents, wg *sync.WaitGroup) {
-	var allRetrievedContents []contentstructs.NamedIgnoreContents
+func processContents(contentsChan chan contentstructs.NamedContents, namesOrdering map[string]int, outputChannel chan []contentstructs.NamedContents, wg *sync.WaitGroup) {
+	var allRetrievedContents []contentstructs.NamedContents
 	for contents := range contentsChan {
 		allRetrievedContents = append(allRetrievedContents, contents)
 		wg.Done()
@@ -294,7 +294,7 @@ func processContents(contentsChan chan contentstructs.NamedIgnoreContents, names
 }
 
 type contentsWithOrdering struct {
-	contents []contentstructs.NamedIgnoreContents
+	contents []contentstructs.NamedContents
 	ordering map[string]int
 }
 

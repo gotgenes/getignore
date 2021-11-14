@@ -9,7 +9,7 @@ import (
 )
 
 func TestWriteIgnoreFile(t *testing.T) {
-	retrievedContents := []contentstructs.NamedIgnoreContents{
+	retrievedContents := []contentstructs.NamedContents{
 		{Name: "Global/Vim", Contents: ".*.swp\ntags\n"},
 		{Name: "Go.gitignore", Contents: "*.o\n*.exe\n"},
 	}
@@ -30,7 +30,7 @@ tags
 }
 
 func TestWriteIgnoreFileEnsuresTerminatingNewlines(t *testing.T) {
-	retrievedContents := []contentstructs.NamedIgnoreContents{
+	retrievedContents := []contentstructs.NamedContents{
 		{Name: "Global/Vim", Contents: ".*.swp\ntags"},
 		{Name: "Go.gitignore", Contents: "*.o\n*.exe"},
 	}
@@ -51,7 +51,7 @@ tags
 }
 
 func TestWriteIgnoreFileNoContents(t *testing.T) {
-	retrievedContents := []contentstructs.NamedIgnoreContents{
+	retrievedContents := []contentstructs.NamedContents{
 		{Name: "Global/Vim", Contents: ""},
 		{Name: "Go.gitignore", Contents: "\n"},
 	}
@@ -68,7 +68,7 @@ func TestWriteIgnoreFileNoContents(t *testing.T) {
 }
 
 func TestWriteIgnoreFileStripsLeadingAndTrailingWhitespace(t *testing.T) {
-	retrievedContents := []contentstructs.NamedIgnoreContents{
+	retrievedContents := []contentstructs.NamedContents{
 		{Name: "Global/Vim", Contents: "\n    \n.*.swp\ntags\n"},
 		{Name: "Go.gitignore", Contents: "*.o\n*.exe     \n\n\t\n"},
 	}
@@ -88,7 +88,7 @@ tags
 	assertWritesExpectedContents(t, retrievedContents, expectedContents)
 }
 
-func assertWritesExpectedContents(t *testing.T, retrievedContents []contentstructs.NamedIgnoreContents, expectedContents string) {
+func assertWritesExpectedContents(t *testing.T, retrievedContents []contentstructs.NamedContents, expectedContents string) {
 	ignoreFile := bytes.NewBufferString("")
 	WriteIgnoreFile(ignoreFile, retrievedContents)
 	ignoreFileContents := ignoreFile.String()
