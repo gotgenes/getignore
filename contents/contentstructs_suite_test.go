@@ -1,4 +1,4 @@
-package contentstructs_test
+package contents_test
 
 import (
 	"testing"

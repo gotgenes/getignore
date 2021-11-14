@@ -6,11 +6,11 @@ import (
 	"io"
 	"strings"
 
-	"github.com/gotgenes/getignore/contentstructs"
+	"github.com/gotgenes/getignore/contents"
 )
 
 // WriteIgnoreFile writes contents to a gitignore file
-func WriteIgnoreFile(ignoreFile io.Writer, allContents []contentstructs.NamedContents) (err error) {
+func WriteIgnoreFile(ignoreFile io.Writer, allContents []contents.NamedContents) (err error) {
 	writer := bufio.NewWriter(ignoreFile)
 	for i, nc := range allContents {
 		if i > 0 {

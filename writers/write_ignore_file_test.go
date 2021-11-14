@@ -3,7 +3,7 @@ package writers_test
 import (
 	"bytes"
 
-	"github.com/gotgenes/getignore/contentstructs"
+	"github.com/gotgenes/getignore/contents"
 	"github.com/gotgenes/getignore/writers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -17,7 +17,7 @@ var _ = Describe("WriteIgnoreFile", func() {
 	})
 
 	It("should handle empty contents", func() {
-		ncs := []contentstructs.NamedContents{
+		ncs := []contents.NamedContents{
 			{Name: "Global/Vim", Contents: ""},
 			{Name: "Go.gitignore", Contents: "\n"},
 		}
@@ -36,7 +36,7 @@ var _ = Describe("WriteIgnoreFile", func() {
 	})
 
 	It("should write formatted contents", func() {
-		ncs := []contentstructs.NamedContents{
+		ncs := []contents.NamedContents{
 			{Name: "Global/Vim", Contents: "\n    \n.*.swp\ntags\n"},
 			{Name: "Go.gitignore", Contents: "*.o\n*.exe     \n\n\t\n"},
 		}
@@ -59,7 +59,7 @@ tags
 	})
 
 	It("should ensure the file ends with a newline", func() {
-		ncs := []contentstructs.NamedContents{
+		ncs := []contents.NamedContents{
 			{Name: "Global/Vim", Contents: ".*.swp\ntags"},
 			{Name: "Go.gitignore", Contents: "*.o\n*.exe"},
 		}
@@ -82,7 +82,7 @@ tags
 	})
 
 	It("should strip leading and trailing whitespace", func() {
-		ncs := []contentstructs.NamedContents{
+		ncs := []contents.NamedContents{
 			{Name: "Global/Vim", Contents: "\n    \n.*.swp\ntags\n"},
 			{Name: "Go.gitignore", Contents: "*.o\n*.exe     \n\n\t\n"},
 		}

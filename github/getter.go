@@ -11,7 +11,7 @@ import (
 	"sync"
 
 	"github.com/google/go-github/v39/github"
-	"github.com/gotgenes/getignore/contentstructs"
+	"github.com/gotgenes/getignore/contents"
 	gierrors "github.com/gotgenes/getignore/errors"
 	"github.com/gotgenes/getignore/identifiers"
 )
@@ -143,7 +143,7 @@ func (g Getter) List(ctx context.Context) ([]string, error) {
 }
 
 // Get returns an array of contents of the files downloaded from the given paths
-func (g Getter) Get(ctx context.Context, paths []string) ([]contentstructs.NamedContents, error) {
+func (g Getter) Get(ctx context.Context, paths []string) ([]contents.NamedContents, error) {
 	tree, err := g.getTree(ctx)
 	if err != nil {
 		return nil, g.newGetError(err)
@@ -173,11 +173,11 @@ func (g Getter) Get(ctx context.Context, paths []string) ([]contentstructs.Named
 	return namedContents, err
 }
 
-func (g Getter) getBlob(ctx context.Context, pathsToSHAs map[string]string, namesChan chan string, contentsChan chan contentstructs.NamedContents, failedFilesChan chan gierrors.FailedFile) {
+func (g Getter) getBlob(ctx context.Context, pathsToSHAs map[string]string, namesChan chan string, contentsChan chan contents.NamedContents, failedFilesChan chan gierrors.FailedFile) {
 	for name := range namesChan {
 		sha, ok := pathsToSHAs[name]
 		if ok {
-			contents, _, err := g.client.Git.GetBlobRaw(ctx, g.Owner, g.Repository, sha)
+			blobContents, _, err := g.client.Git.GetBlobRaw(ctx, g.Owner, g.Repository, sha)
 			if err != nil {
 				failedFile := gierrors.FailedFile{
 					Name:    name,
@@ -186,11 +186,11 @@ func (g Getter) getBlob(ctx context.Context, pathsToSHAs map[string]string, name
 				}
 				failedFilesChan <- failedFile
 			} else {
-				contents := contentstructs.NamedContents{
+				nc := contents.NamedContents{
 					Name:     name,
-					Contents: string(contents),
+					Contents: string(blobContents),
 				}
-				contentsChan <- contents
+				contentsChan <- nc
 			}
 		} else {
 			failedFile := gierrors.FailedFile{
@@ -238,10 +238,10 @@ func (g Getter) filterTreeEntries(treeEntries []*github.TreeEntry) []*github.Tre
 	return entries
 }
 
-func (g Getter) startDownloaders(ctx context.Context, numFilesToDownload int, pathsToSHAs map[string]string) (chan string, chan contentstructs.NamedContents, chan gierrors.FailedFile) {
+func (g Getter) startDownloaders(ctx context.Context, numFilesToDownload int, pathsToSHAs map[string]string) (chan string, chan contents.NamedContents, chan gierrors.FailedFile) {
 	namesChan := make(chan string, numFilesToDownload)
 	maxRequests := min(numFilesToDownload, g.MaxRequests)
-	contentsChan := make(chan contentstructs.NamedContents, numFilesToDownload)
+	contentsChan := make(chan contents.NamedContents, numFilesToDownload)
 	failedFilesChan := make(chan gierrors.FailedFile, numFilesToDownload)
 	for i := 0; i < maxRequests; i++ {
 		go g.getBlob(ctx, pathsToSHAs, namesChan, contentsChan, failedFilesChan)
@@ -274,17 +274,17 @@ func createPathsOrdering(names []string) map[string]int {
 	return namesOrdering
 }
 
-func startProcessors(namesOrdering map[string]int, contentsChan chan contentstructs.NamedContents, failedFilesChan chan gierrors.FailedFile) (*sync.WaitGroup, chan []contentstructs.NamedContents, chan gierrors.FailedFiles) {
+func startProcessors(namesOrdering map[string]int, contentsChan chan contents.NamedContents, failedFilesChan chan gierrors.FailedFile) (*sync.WaitGroup, chan []contents.NamedContents, chan gierrors.FailedFiles) {
 	var wg sync.WaitGroup
-	outputChan := make(chan []contentstructs.NamedContents)
+	outputChan := make(chan []contents.NamedContents)
 	errorsChan := make(chan gierrors.FailedFiles)
 	go processContents(contentsChan, namesOrdering, outputChan, &wg)
 	go processErrors(failedFilesChan, errorsChan, &wg)
 	return &wg, outputChan, errorsChan
 }
 
-func processContents(contentsChan chan contentstructs.NamedContents, namesOrdering map[string]int, outputChannel chan []contentstructs.NamedContents, wg *sync.WaitGroup) {
-	var allRetrievedContents []contentstructs.NamedContents
+func processContents(contentsChan chan contents.NamedContents, namesOrdering map[string]int, outputChannel chan []contents.NamedContents, wg *sync.WaitGroup) {
+	var allRetrievedContents []contents.NamedContents
 	for contents := range contentsChan {
 		allRetrievedContents = append(allRetrievedContents, contents)
 		wg.Done()
@@ -294,7 +294,7 @@ func processContents(contentsChan chan contentstructs.NamedContents, namesOrderi
 }
 
 type contentsWithOrdering struct {
-	contents []contentstructs.NamedContents
+	contents []contents.NamedContents
 	ordering map[string]int
 }
 

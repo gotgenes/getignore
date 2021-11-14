@@ -1,4 +1,4 @@
-package contentstructs
+package contents
 
 import (
 	"path/filepath"
