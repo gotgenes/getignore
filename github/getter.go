@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"strings"
@@ -142,21 +143,22 @@ func (g Getter) List(ctx context.Context) ([]string, error) {
 	return files, nil
 }
 
-// Get returns an array of contents of the files downloaded from the given paths
-func (g Getter) Get(ctx context.Context, paths []string) ([]contents.NamedContents, error) {
+// Get returns an array of contents of the files downloaded from the given names
+func (g Getter) Get(ctx context.Context, names []string) ([]contents.NamedContents, error) {
 	tree, err := g.getTree(ctx)
 	if err != nil {
 		return nil, g.newGetError(err)
 	}
 	pathsToSHAs := createPathsToSHAs(tree.Entries)
 
-	numPaths := len(paths)
-	namesChan, contentsChan, failedFilesChan := g.startDownloaders(ctx, numPaths, pathsToSHAs)
+	names = g.ensureSuffixes(names)
+	numNames := len(names)
+	namesChan, contentsChan, failedFilesChan := g.startDownloaders(ctx, numNames, pathsToSHAs)
 
-	namesOrdering := createPathsOrdering(paths)
+	namesOrdering := createNamesOrdering(names)
 	wg, outputChan, errorsChan := startProcessors(namesOrdering, contentsChan, failedFilesChan)
 
-	for _, name := range paths {
+	for _, name := range names {
 		namesChan <- name
 		wg.Add(1)
 	}
@@ -249,6 +251,18 @@ func (g Getter) startDownloaders(ctx context.Context, numFilesToDownload int, pa
 	return namesChan, contentsChan, failedFilesChan
 }
 
+func (g Getter) ensureSuffixes(names []string) []string {
+	paths := make([]string, len(names))
+	for i, name := range names {
+		path := name
+		if filepath.Ext(name) == "" {
+			path = name + g.Suffix
+		}
+		paths[i] = path
+	}
+	return paths
+}
+
 func createPathsToSHAs(entries []*github.TreeEntry) map[string]string {
 	pathsToSHAs := make(map[string]string)
 	for _, entry := range entries {
@@ -266,7 +280,7 @@ func min(x int, y int) int {
 	return y
 }
 
-func createPathsOrdering(names []string) map[string]int {
+func createNamesOrdering(names []string) map[string]int {
 	namesOrdering := make(map[string]int)
 	for i, name := range names {
 		namesOrdering[name] = i

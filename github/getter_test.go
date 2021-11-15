@@ -509,19 +509,29 @@ var _ = Describe("Getter", func() {
 						responseBody = "*.o\n*.a\n*.so\n"
 					})
 
-					It("returns contents when it matches a name", func() {
-						nc, _ := getter.Get(ctx, []string{"Go.gitignore"})
-						Expect(nc).To(Equal([]contents.NamedContents{
-							{
-								Name:     "Go.gitignore",
-								Contents: "*.o\n*.a\n*.so\n",
-							},
-						}))
+					assertReturnsExpectedContents := func(name string) {
+						It("should return the expected contents", func() {
+							nc, _ := getter.Get(ctx, []string{name})
+							Expect(nc).To(Equal([]contents.NamedContents{
+								{
+									Name:     "Go.gitignore",
+									Contents: "*.o\n*.a\n*.so\n",
+								},
+							}))
+						})
+
+						It("should not return an error", func() {
+							_, err := getter.Get(ctx, []string{name})
+							Expect(err).ShouldNot(HaveOccurred())
+						})
+					}
+
+					Context("the name includes an extension", func() {
+						assertReturnsExpectedContents("Go.gitignore")
 					})
 
-					It("should not return an error", func() {
-						_, err := getter.Get(ctx, []string{"Go.gitignore"})
-						Expect(err).ShouldNot(HaveOccurred())
+					Context("the name does not include an extension", func() {
+						assertReturnsExpectedContents("Go")
 					})
 				})
 
