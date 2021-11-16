@@ -6,7 +6,6 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/gotgenes/getignore/cmd"
 	"github.com/gotgenes/getignore/pkg/getignore"
 )
 
@@ -25,9 +24,6 @@ func creatCLI() *cli.App {
 	app.Version = getignore.Version
 	app.Usage = "Bootstraps gitignore files from central sources"
 	app.EnableBashCompletion = true
-	app.Commands = []*cli.Command{
-		cmd.List,
-		cmd.Get,
-	}
+	app.Commands = []*cli.Command{List, Get}
 	return app
 }

@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"github.com/gotgenes/getignore/pkg/github"

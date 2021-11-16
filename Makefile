@@ -3,10 +3,10 @@ VERSION := $(patsubst v%,%,$(shell git describe --tags))
 LDFLAGS := -ldflags "-X 'github.com/gotgenes/getignore/pkg/getignore.Version=${VERSION}'"
 
 build:
-	go build ${LDFLAGS}
+	go build ${LDFLAGS} ./cmd/getignore
 
 install:
-	go install ${LDFLAGS}
+	go install ${LDFLAGS} ./cmd/getignore
 
 install-deps:
 	go install github.com/onsi/ginkgo/ginkgo@v1.16.5
@@ -26,7 +26,8 @@ build-all:
 	gox \
 	${LDFLAGS} \
 	-osarch="darwin/amd64 darwin/arm64 linux/386 linux/amd64 linux/arm linux/arm64 windows/amd64" \
-	-output="dist/getignore-${VERSION}-{{.OS}}-{{.Arch}}/{{.Dir}}" .
+	-output="dist/getignore-${VERSION}-{{.OS}}-{{.Arch}}/{{.Dir}}" \
+	./cmd/getignore
 
 dist: build-all
 	$(DIST_DIRS) cp -r ../LICENSE ../README.md ../completions {} \; && \
