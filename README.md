@@ -1,6 +1,6 @@
 # getignore
 
-getignore bootstraps `.gitignore` files from [GitHub .gitignore patterns](https://github.com/github/gitignore).
+getignore bootstraps `.gitignore` files from [GitHub gitignore patterns](https://github.com/github/gitignore).
 
 [![CI workflow status](https://github.com/gotgenes/getignore/actions/workflows/ci.yaml/badge.svg)](https://github.com/gotgenes/getignore/actions/workflows/ci.yaml)
 
@@ -17,17 +17,10 @@ brew update
 brew install getignore
 ```
 
-### Chocolatey users (Windows)
-
-[Chocolatey](https://chocolatey.org/) users can install getignore using the following command (as admin):
-
-```shell
-choco install getignore
-```
-
 ### Windows, Linux, and macOS / OS X
 
-Download and unpack a pre-compiled executable from [the releases page](https://github.com/gotgenes/getignore/releases). Make sure to place the executable in your shell's `PATH`.
+Download and unpack a pre-compiled executable from [the releases page](https://github.com/gotgenes/getignore/releases).
+Make sure to place the executable in your shell's `PATH`.
 
 
 ### Other platforms
@@ -60,7 +53,8 @@ getignore help get
 
 ### get
 
-Use the `get` command to obtain gitignore patterns from remote repositories. By default, it will obtain patterns from the [GitHub gitignore repository](https://github.com/github/gitignore), and write these patterns to the `STDOUT`. Simply pass in the names of the ignore files you wish to retrieve.
+Use the `get` command to obtain gitignore patterns from remote repositories, concatenate their contents, and output them.
+Simply pass in the names of the ignore files you wish to retrieve.
 
 For example,
 
@@ -70,16 +64,24 @@ getignore get Go.gitignore Global/Vim.gitignore
 
 downloads and concatenates the Go and Vim ignore patterns and writes them to `STDOUT`.
 
-
-Note the `.gitignore` extension on the names optional. Feel free to omit the extension; the previous example could be issued more simply as
+Note the `.gitignore` extension on the names optional.
+Feel free to omit the extension; the previous example could be issued more simply as
 
 ```shell
 getignore get Go Global/Vim
 ```
 
-so long as they share a common extension. (See also the `--default-extension` option.)
+`get` will add the `.gitignore` extension for you when retrieving the files.
+You can use the `--suffix` flag to choose a different default suffix.
+If you want no suffix added, pass the empty string (`--suffix ''`).
 
-If you'd like to write the contents directly to a file, use the `-o` option. For example,
+By default, `get` downloads the files from the [GitHub gitignore patterns repository](https://github.com/github/gitignore) using the [GitHub API v3 Trees endpoint](https://developer.github.com/v3/git/trees/).
+You can use a different owner, repository name, branch, or combination of all of them via the respective `--owner`, `--repository`, and `--branch` flags.
+It is also possible to pass in a different API URL via the `--api-url` flag.
+
+By default, `get` writes the contents to `STDOUT`.
+If you'd like to write the contents directly to a file, you can use the `-o` option.
+For example,
 
 ```shell
 getignore get -o .gitignore Go Global/Vim
@@ -87,27 +89,17 @@ getignore get -o .gitignore Go Global/Vim
 
 Would write the contents of the Go and Vim ignore patterns into the `.gitignore` file in the current working directory (`./.gitignore`).
 
-When retrieving many ignore patterns, it can be helpful instead to list names in a file, instead. Given the following file, `names.txt`
+When retrieving many ignore patterns, it can be helpful instead to list names in a file, instead.
+Suppose we create a file `names.txt` with the following contents:
 
 ```txt
 Go
 Node
-Yeoman
-Global/Eclipse
-Global/Emacs
-Global/JetBrains
-Global/Linux
-Global/NotepadPP
-Global/SublimeText
-Global/Tags
-Global/TextMate
 Global/Vim
-Global/Windows
-Global/Xcode
 Global/macOS
 ```
 
-we can get all the patterns in this file by passing it via the `--names-file` option
+We can get all the patterns in this file by passing it in to `get` via the `--names-file` option
 
 ```shell
 getignore get --names-file names.txt
@@ -118,15 +110,20 @@ Please see the `get` usage via `getignore help get` for explanations of other op
 
 ### list
 
-Use this command to get a listing of available gitignore patterns files from a remote repository and print the listing to STDOUT. This allows users to standard \*nix tools to manipulate the command's output. For example, the following command line command can be used to download all the "global" gitignore patterns files:
+Use this command to get a listing of available gitignore patterns files from a remote repository and print the listing to `STDOUT`.
+This allows users to use standard command line tools to manipulate the command's output.
+For example, the following command line command can be used to download all the "global" gitignore patterns files:
 
 ```
 getignore list | grep Global/ | xargs getignore get
 ```
 
-By default, `list` queries the [GitHub .gitignore patterns repository](https://github.com/github/gitignore) using the [GitHub API v3 Trees endpoint](https://developer.github.com/v3/git/trees/). It is possible to pass in a different API URL via the `--api-url` flag, however.
+By default, `list` queries the [GitHub gitignore patterns repository](https://github.com/github/gitignore) using the [GitHub API v3 Trees endpoint](https://developer.github.com/v3/git/trees/).
+You can use a different owner, repository name, branch, or combination of all of them via the respective `--owner`, `--repository`, and `--branch` flags.
+It is possible to pass in a different API URL via the `--api-url` flag.
 
-By default, it filters for files that end with the `.gitignore` suffix, however, you can provide an alternative suffix via the `--suffix` flag. To list all files, provide an empty suffix, e.g.
+By default, `list` filters for files that end with the `.gitignore` suffix, however, you can provide an alternative suffix via the `--suffix` flag.
+Alternatively, to list all files in the repository, regardless of suffix, provide an empty string as the value, e.g.
 
 ```
 getignore list --suffix ''
