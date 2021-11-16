@@ -12,9 +12,7 @@ import (
 	"sync"
 
 	"github.com/google/go-github/v39/github"
-	"github.com/gotgenes/getignore/contents"
-	gierrors "github.com/gotgenes/getignore/errors"
-	"github.com/gotgenes/getignore/identifiers"
+	"github.com/gotgenes/getignore/pkg/getignore"
 )
 
 // DefaultMaxRequests is the default maximum number of concurrent requests
@@ -65,7 +63,7 @@ func NewGetter(options ...GetterOption) (Getter, error) {
 	} else {
 		ghClient = github.NewClient(params.client)
 	}
-	userAgentString := fmt.Sprintf(userAgentTemplate, identifiers.Version)
+	userAgentString := fmt.Sprintf(userAgentTemplate, getignore.Version)
 	ghClient.UserAgent = userAgentString
 	return Getter{
 		client:      ghClient,
@@ -144,7 +142,7 @@ func (g Getter) List(ctx context.Context) ([]string, error) {
 }
 
 // Get returns an array of contents of the files downloaded from the given names
-func (g Getter) Get(ctx context.Context, names []string) ([]contents.NamedContents, error) {
+func (g Getter) Get(ctx context.Context, names []string) ([]getignore.NamedContents, error) {
 	tree, err := g.getTree(ctx)
 	if err != nil {
 		return nil, g.newGetError(err)
@@ -175,27 +173,27 @@ func (g Getter) Get(ctx context.Context, names []string) ([]contents.NamedConten
 	return namedContents, err
 }
 
-func (g Getter) getBlob(ctx context.Context, pathsToSHAs map[string]string, namesChan chan string, contentsChan chan contents.NamedContents, failedFilesChan chan gierrors.FailedFile) {
+func (g Getter) getBlob(ctx context.Context, pathsToSHAs map[string]string, namesChan chan string, contentsChan chan getignore.NamedContents, failedFilesChan chan getignore.FailedFile) {
 	for name := range namesChan {
 		sha, ok := pathsToSHAs[name]
 		if ok {
 			blobContents, _, err := g.client.Git.GetBlobRaw(ctx, g.Owner, g.Repository, sha)
 			if err != nil {
-				failedFile := gierrors.FailedFile{
+				failedFile := getignore.FailedFile{
 					Name:    name,
 					Message: "failed to download",
 					Err:     err,
 				}
 				failedFilesChan <- failedFile
 			} else {
-				nc := contents.NamedContents{
+				nc := getignore.NamedContents{
 					Name:     name,
 					Contents: string(blobContents),
 				}
 				contentsChan <- nc
 			}
 		} else {
-			failedFile := gierrors.FailedFile{
+			failedFile := getignore.FailedFile{
 				Name:    name,
 				Message: "not present in file tree",
 			}
@@ -240,11 +238,11 @@ func (g Getter) filterTreeEntries(treeEntries []*github.TreeEntry) []*github.Tre
 	return entries
 }
 
-func (g Getter) startDownloaders(ctx context.Context, numFilesToDownload int, pathsToSHAs map[string]string) (chan string, chan contents.NamedContents, chan gierrors.FailedFile) {
+func (g Getter) startDownloaders(ctx context.Context, numFilesToDownload int, pathsToSHAs map[string]string) (chan string, chan getignore.NamedContents, chan getignore.FailedFile) {
 	namesChan := make(chan string, numFilesToDownload)
 	maxRequests := min(numFilesToDownload, g.MaxRequests)
-	contentsChan := make(chan contents.NamedContents, numFilesToDownload)
-	failedFilesChan := make(chan gierrors.FailedFile, numFilesToDownload)
+	contentsChan := make(chan getignore.NamedContents, numFilesToDownload)
+	failedFilesChan := make(chan getignore.FailedFile, numFilesToDownload)
 	for i := 0; i < maxRequests; i++ {
 		go g.getBlob(ctx, pathsToSHAs, namesChan, contentsChan, failedFilesChan)
 	}
@@ -288,17 +286,17 @@ func createNamesOrdering(names []string) map[string]int {
 	return namesOrdering
 }
 
-func startProcessors(namesOrdering map[string]int, contentsChan chan contents.NamedContents, failedFilesChan chan gierrors.FailedFile) (*sync.WaitGroup, chan []contents.NamedContents, chan gierrors.FailedFiles) {
+func startProcessors(namesOrdering map[string]int, contentsChan chan getignore.NamedContents, failedFilesChan chan getignore.FailedFile) (*sync.WaitGroup, chan []getignore.NamedContents, chan getignore.FailedFiles) {
 	var wg sync.WaitGroup
-	outputChan := make(chan []contents.NamedContents)
-	errorsChan := make(chan gierrors.FailedFiles)
+	outputChan := make(chan []getignore.NamedContents)
+	errorsChan := make(chan getignore.FailedFiles)
 	go processContents(contentsChan, namesOrdering, outputChan, &wg)
 	go processErrors(failedFilesChan, errorsChan, &wg)
 	return &wg, outputChan, errorsChan
 }
 
-func processContents(contentsChan chan contents.NamedContents, namesOrdering map[string]int, outputChannel chan []contents.NamedContents, wg *sync.WaitGroup) {
-	var allRetrievedContents []contents.NamedContents
+func processContents(contentsChan chan getignore.NamedContents, namesOrdering map[string]int, outputChannel chan []getignore.NamedContents, wg *sync.WaitGroup) {
+	var allRetrievedContents []getignore.NamedContents
 	for contents := range contentsChan {
 		allRetrievedContents = append(allRetrievedContents, contents)
 		wg.Done()
@@ -308,7 +306,7 @@ func processContents(contentsChan chan contents.NamedContents, namesOrdering map
 }
 
 type contentsWithOrdering struct {
-	contents []contents.NamedContents
+	contents []getignore.NamedContents
 	ordering map[string]int
 }
 
@@ -324,8 +322,8 @@ func (cwo *contentsWithOrdering) Less(i, j int) bool {
 	return cwo.ordering[cwo.contents[i].Name] < cwo.ordering[cwo.contents[j].Name]
 }
 
-func processErrors(failedFilesChan chan gierrors.FailedFile, errorsChan chan gierrors.FailedFiles, wg *sync.WaitGroup) {
-	var failedFiles gierrors.FailedFiles
+func processErrors(failedFilesChan chan getignore.FailedFile, errorsChan chan getignore.FailedFiles, wg *sync.WaitGroup) {
+	var failedFiles getignore.FailedFiles
 	for failedFile := range failedFilesChan {
 		failedFiles = append(failedFiles, failedFile)
 		wg.Done()

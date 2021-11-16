@@ -1,4 +1,4 @@
-package contents
+package getignore
 
 import (
 	"path/filepath"

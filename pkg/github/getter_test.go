@@ -6,9 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gotgenes/getignore/contents"
-	"github.com/gotgenes/getignore/github"
-	"github.com/gotgenes/getignore/identifiers"
+	"github.com/gotgenes/getignore/pkg/getignore"
+	"github.com/gotgenes/getignore/pkg/github"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
@@ -16,7 +15,7 @@ import (
 )
 
 type contentsAndError struct {
-	Contents []contents.NamedContents
+	Contents []getignore.NamedContents
 	Err      error
 }
 
@@ -25,7 +24,7 @@ var _ = Describe("Getter", func() {
 		ctx               context.Context
 		server            *ghttp.Server
 		getter            github.Getter
-		expectedUserAgent = []string{fmt.Sprintf("getignore/%s", identifiers.Version)}
+		expectedUserAgent = []string{fmt.Sprintf("getignore/%s", getignore.Version)}
 	)
 
 	BeforeEach(func() {
@@ -512,7 +511,7 @@ var _ = Describe("Getter", func() {
 					assertReturnsExpectedContents := func(name string) {
 						It("should return the expected contents", func() {
 							nc, _ := getter.Get(ctx, []string{name})
-							Expect(nc).To(Equal([]contents.NamedContents{
+							Expect(nc).To(Equal([]getignore.NamedContents{
 								{
 									Name:     "Go.gitignore",
 									Contents: "*.o\n*.a\n*.so\n",
@@ -567,7 +566,7 @@ var _ = Describe("Getter", func() {
 					results     contentsAndError
 				)
 
-				assertReturnsContentsWithoutError := func(expectedContents []contents.NamedContents) {
+				assertReturnsContentsWithoutError := func(expectedContents []getignore.NamedContents) {
 					It("returns the expected contents", func() {
 						Eventually(resultsChan).Should(Receive(&results))
 						Expect(results.Contents).Should(Equal(expectedContents))
@@ -579,7 +578,7 @@ var _ = Describe("Getter", func() {
 					})
 				}
 
-				assertReturnsContentsWithError := func(expectedContents []contents.NamedContents, errorMatchers ...types.GomegaMatcher) {
+				assertReturnsContentsWithError := func(expectedContents []getignore.NamedContents, errorMatchers ...types.GomegaMatcher) {
 					It("returns the expected contents", func() {
 						Eventually(resultsChan).Should(Receive(&results))
 						Expect(results.Contents).Should(Equal(expectedContents))
@@ -649,7 +648,7 @@ var _ = Describe("Getter", func() {
 							}()
 						})
 
-						assertReturnsContentsWithoutError([]contents.NamedContents{
+						assertReturnsContentsWithoutError([]getignore.NamedContents{
 							{
 								Name:     "Go.gitignore",
 								Contents: "*.o\n*.a\n*.so\n",
@@ -676,7 +675,7 @@ var _ = Describe("Getter", func() {
 							}()
 						})
 
-						assertReturnsContentsWithoutError([]contents.NamedContents{
+						assertReturnsContentsWithoutError([]getignore.NamedContents{
 							{
 								Name:     "Go.gitignore",
 								Contents: "*.o\n*.a\n*.so\n",
@@ -711,7 +710,7 @@ var _ = Describe("Getter", func() {
 						})
 
 						assertReturnsContentsWithError(
-							[]contents.NamedContents{
+							[]getignore.NamedContents{
 								{
 									Name:     "Go.gitignore",
 									Contents: "*.o\n*.a\n*.so\n",
@@ -746,7 +745,7 @@ var _ = Describe("Getter", func() {
 							}()
 						})
 						assertReturnsContentsWithError(
-							[]contents.NamedContents{
+							[]getignore.NamedContents{
 								{
 									Name:     "Global/Anjuta.gitignore",
 									Contents: "/.anjuta/\n/.anjuta_sym_db.db\n",
@@ -774,7 +773,7 @@ var _ = Describe("Getter", func() {
 							}()
 						})
 						assertReturnsContentsWithError(
-							[]contents.NamedContents{
+							[]getignore.NamedContents{
 								{
 									Name:     "Go.gitignore",
 									Contents: "*.o\n*.a\n*.so\n",

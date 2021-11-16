@@ -1,14 +1,12 @@
 package cmd
 
 import (
-	"bufio"
 	"io"
 	"log"
 	"os"
-	"strings"
 
-	"github.com/gotgenes/getignore/github"
-	"github.com/gotgenes/getignore/writers"
+	"github.com/gotgenes/getignore/pkg/getignore"
+	"github.com/gotgenes/getignore/pkg/github"
 	"github.com/urfave/cli/v2"
 )
 
@@ -52,7 +50,7 @@ func getFiles(ctx *cli.Context) error {
 		return err
 	}
 	log.Println("Writing contents to", outputFilePath)
-	err = writers.WriteIgnoreFile(outputFile, contents)
+	err = getignore.WriteIgnoreFile(outputFile, contents)
 	if err != nil {
 		return err
 	}
@@ -64,22 +62,9 @@ func getNamesFromArguments(c *cli.Context) []string {
 
 	if c.String("names-file") != "" {
 		namesFile, _ := os.Open(c.String("names-file"))
-		names = append(names, ParseNamesFile(namesFile)...)
+		names = append(names, getignore.ParseNamesFile(namesFile)...)
 	}
 	return names
-}
-
-// ParseNamesFile reads a file containing one name of a gitignore patterns file per line
-func ParseNamesFile(namesFile io.Reader) []string {
-	var a []string
-	scanner := bufio.NewScanner(namesFile)
-	for scanner.Scan() {
-		name := strings.TrimSpace(scanner.Text())
-		if len(name) > 0 {
-			a = append(a, name)
-		}
-	}
-	return a
 }
 
 func getOutputFile(c *cli.Context) (string, io.Writer, error) {

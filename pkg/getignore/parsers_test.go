@@ -1,4 +1,4 @@
-package cmd_test
+package getignore_test
 
 import (
 	"strings"
@@ -6,13 +6,13 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/gotgenes/getignore/cmd"
+	"github.com/gotgenes/getignore/pkg/getignore"
 )
 
 var _ = Describe("ParseNamesFile", func() {
 	assertReturnsExpectedNames := func(contents string) {
 		namesFile := strings.NewReader(contents)
-		names := cmd.ParseNamesFile(namesFile)
+		names := getignore.ParseNamesFile(namesFile)
 		Expect(names).Should(Equal([]string{"Global/Vim", "Python"}))
 	}
 

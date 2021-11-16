@@ -1,4 +1,4 @@
-package errors_test
+package getignore_test
 
 import (
 	"fmt"
@@ -6,12 +6,12 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/gotgenes/getignore/errors"
+	"github.com/gotgenes/getignore/pkg/getignore"
 )
 
 var _ = Describe("FailedFiles", func() {
 	It("should implement the error interface", func() {
-		err := errors.FailedFiles{
+		err := getignore.FailedFiles{
 			{
 				Name:    "Go.gitignore",
 				Message: "could not connect",

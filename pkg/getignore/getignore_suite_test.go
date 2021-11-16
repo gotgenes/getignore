@@ -1,4 +1,4 @@
-package cmd_test
+package getignore_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestCmd(t *testing.T) {
+func TestGetignore(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Cmd Suite")
+	RunSpecs(t, "Getignore Suite")
 }

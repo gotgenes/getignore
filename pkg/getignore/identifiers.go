@@ -1,4 +1,4 @@
-package identifiers
+package getignore
 
 import "fmt"
 

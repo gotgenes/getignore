@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/gotgenes/getignore/github"
+	"github.com/gotgenes/getignore/pkg/github"
 	"github.com/urfave/cli/v2"
 )
 

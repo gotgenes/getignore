@@ -1,4 +1,4 @@
-package errors_test
+package getignore_test
 
 import (
 	"errors"
@@ -7,14 +7,14 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	gierrors "github.com/gotgenes/getignore/errors"
+	getignore "github.com/gotgenes/getignore/pkg/getignore"
 )
 
 var _ = Describe("FailedFile", func() {
-	var ff gierrors.FailedFile
+	var ff getignore.FailedFile
 
 	BeforeEach(func() {
-		ff = gierrors.FailedFile{
+		ff = getignore.FailedFile{
 			Name:    "Go.gitignore",
 			Message: "could not connect",
 			Err:     fmt.Errorf("problem connecting to the server"),
