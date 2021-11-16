@@ -141,7 +141,16 @@ getignore supports completion of the command line for [Bash](completions/bash/ge
 make
 ```
 
+
 ## Testing
+
+Ensure you have testing dependencies with
+
+```shell
+make dev-install
+```
+
+Then run the tests with
 
 ```shell
 make test
