@@ -1,5 +1,34 @@
 # Changelog
 
+## 4.0.0 - TBD
+
+### Added
+
+* Added the following options to `get` command:
+
+  * `--base-url`: the base URL to the GitHub REST API v3-compatible server
+  * `--owner`: the owner or organization of the repository of gitignore files
+  * `--repository`: the name of the repository of gitignore files
+  * `--branch`: the branch of the repository from which to list gitignore files
+
+
+### Removed
+
+* Removed the `--api-url` option from the `get` command.
+
+
+### Changed
+
+* Refactored `get` command to use [GitHub REST API v3](https://docs.github.com/en/rest), making it similar to the `list` command.
+* Renamed `--max-connections` to `--max-requests` for the `get` command.
+* Changed the short alias flag for `--owner` from `-o` to `-w` of the `list` command, to avoid conflict with the `--output` alias of the `get` command.
+* Moved all non-command code to `pkg` subdirectory, following the recommended layout in [golang-standards/project-layout](https://github.com/golang-standards/project-layout).
+  The core code can be found under `pkg/getignore/`.
+  The code for interacting with GitHub can be found under `pkg/github/`
+* Switched testing framework from [stretch/testify](https://github.com/stretchr/testify) to [Ginkgo](https://onsi.github.io/ginkgo/) and [Gomega](https://onsi.github.io/ginkgo/).
+* Renamed `install-deps` rule to `dev-install` in `Makefile`.
+
+
 ## 3.0.1 - 2021-10-16
 
 ### Removed
@@ -20,13 +49,13 @@
 
 ### Removed
 
-* Removed the `--api-url` option.
+* Removed the `--api-url` option from the `list` command.
 
 ### Changed
 
 * Refactored `list` command to use [GitHub REST API v3](https://docs.github.com/en/rest).
 * Added dependency on [go-github](https://github.com/google/go-github) to interact with the GitHub REST API.
-* Upgrade dependencies.
+* Upgraded dependencies.
 
 
 ## 2.1.1 - 2021-09-04
