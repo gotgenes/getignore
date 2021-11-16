@@ -77,7 +77,7 @@ If you want no suffix added, pass the empty string (`--suffix ''`).
 
 By default, `get` downloads the files from the [GitHub gitignore patterns repository](https://github.com/github/gitignore) using the [GitHub API v3 Trees endpoint](https://developer.github.com/v3/git/trees/).
 You can use a different owner, repository name, branch, or combination of all of them via the respective `--owner`, `--repository`, and `--branch` flags.
-It is also possible to pass in a different API URL via the `--api-url` flag.
+It is also possible to pass in a different API URL via the `--base-url` flag.
 
 By default, `get` writes the contents to `STDOUT`.
 If you'd like to write the contents directly to a file, you can use the `-o` option.
@@ -120,7 +120,7 @@ getignore list | grep Global/ | xargs getignore get
 
 By default, `list` queries the [GitHub gitignore patterns repository](https://github.com/github/gitignore) using the [GitHub API v3 Trees endpoint](https://developer.github.com/v3/git/trees/).
 You can use a different owner, repository name, branch, or combination of all of them via the respective `--owner`, `--repository`, and `--branch` flags.
-It is possible to pass in a different API URL via the `--api-url` flag.
+It is possible to pass in a different API URL via the `--base-url` flag.
 
 By default, `list` filters for files that end with the `.gitignore` suffix, however, you can provide an alternative suffix via the `--suffix` flag.
 Alternatively, to list all files in the repository, regardless of suffix, provide an empty string as the value, e.g.
