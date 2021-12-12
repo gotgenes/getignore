@@ -3,7 +3,7 @@ package github
 const (
 	Owner      = "github"
 	Repository = "gitignore"
-	Branch     = "master"
+	Branch     = "main"
 	Suffix     = ".gitignore"
 
 	userAgentTemplate = "getignore/%s"
