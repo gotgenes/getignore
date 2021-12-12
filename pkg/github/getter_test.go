@@ -59,7 +59,7 @@ var _ = Describe("Getter", func() {
 			BeforeEach(func() {
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/master"),
+						ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/main"),
 						ghttp.VerifyHeader(http.Header{
 							"User-Agent": expectedUserAgent,
 						}),
@@ -69,7 +69,7 @@ var _ = Describe("Getter", func() {
 						ghttp.RespondWith(
 							http.StatusOK,
 							`{
-  "name": "master",
+  "name": "main",
   "commit": {
 	"sha": "b0012e4930d0a8c350254a3caeedf7441ea286a3",
 	"commit": {
@@ -278,7 +278,7 @@ var _ = Describe("Getter", func() {
 					_, err := getter.List(ctx)
 					Expect(err).Should(
 						MatchError(And(
-							HavePrefix("error listing contents of github/gitignore at master:"),
+							HavePrefix("error listing contents of github/gitignore at main:"),
 							errorMatcher,
 						)),
 					)
@@ -294,7 +294,7 @@ var _ = Describe("Getter", func() {
 				BeforeEach(func() {
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/master"),
+							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/main"),
 							ghttp.VerifyHeader(http.Header{
 								"User-Agent": expectedUserAgent,
 							}),
@@ -313,7 +313,7 @@ var _ = Describe("Getter", func() {
 				BeforeEach(func() {
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/master"),
+							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/main"),
 							ghttp.VerifyHeader(http.Header{
 								"User-Agent": expectedUserAgent,
 							}),
@@ -331,7 +331,7 @@ var _ = Describe("Getter", func() {
 			When("the trees endpoint errors", func() {
 				BeforeEach(func() {
 					branchesResponseBody := `{
-  "name": "master",
+  "name": "main",
   "commit": {
 	"sha": "b0012e4930d0a8c350254a3caeedf7441ea286a3",
 	"commit": {
@@ -343,7 +343,7 @@ var _ = Describe("Getter", func() {
 }`
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/master"),
+							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/main"),
 							ghttp.VerifyHeader(http.Header{
 								"User-Agent": expectedUserAgent,
 							}),
@@ -375,7 +375,7 @@ var _ = Describe("Getter", func() {
 			BeforeEach(func() {
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/master"),
+						ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/main"),
 						ghttp.VerifyHeader(http.Header{
 							"User-Agent": expectedUserAgent,
 						}),
@@ -385,7 +385,7 @@ var _ = Describe("Getter", func() {
 						ghttp.RespondWith(
 							http.StatusOK,
 							`{
-  "name": "master",
+  "name": "main",
   "commit": {
 	"sha": "b0012e4930d0a8c350254a3caeedf7441ea286a3",
 	"commit": {
@@ -542,7 +542,7 @@ var _ = Describe("Getter", func() {
 
 					It("should return an error", func() {
 						_, err := getter.Get(ctx, []string{"Go.gitignore"})
-						Expect(err).Should(MatchError("error getting files from github/gitignore at master: failed to get the following files: Go.gitignore\nGo.gitignore: failed to download\n"))
+						Expect(err).Should(MatchError("error getting files from github/gitignore at main: failed to get the following files: Go.gitignore\nGo.gitignore: failed to download\n"))
 					})
 
 					It("should return empty contents", func() {
@@ -586,7 +586,7 @@ var _ = Describe("Getter", func() {
 
 					It("returns the expected error", func() {
 						Eventually(resultsChan).Should(Receive(&results))
-						errorMatchers = append(errorMatchers, HavePrefix("error getting files from github/gitignore at master:"))
+						errorMatchers = append(errorMatchers, HavePrefix("error getting files from github/gitignore at main:"))
 						Expect(results.Err).Should(MatchError(And(errorMatchers...)))
 					})
 				}
@@ -814,7 +814,7 @@ var _ = Describe("Getter", func() {
 				It("should return an error", func() {
 					_, err := getter.Get(ctx, []string{"Go.gitignore"})
 					Expect(err).Should(MatchError(And(
-						HavePrefix("error getting files from github/gitignore at master:"),
+						HavePrefix("error getting files from github/gitignore at main:"),
 						errorMatcher,
 					)))
 				})
@@ -829,7 +829,7 @@ var _ = Describe("Getter", func() {
 				BeforeEach(func() {
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/master"),
+							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/main"),
 							ghttp.VerifyHeader(http.Header{
 								"User-Agent": expectedUserAgent,
 							}),
@@ -848,7 +848,7 @@ var _ = Describe("Getter", func() {
 				BeforeEach(func() {
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/master"),
+							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/main"),
 							ghttp.VerifyHeader(http.Header{
 								"User-Agent": expectedUserAgent,
 							}),
@@ -866,7 +866,7 @@ var _ = Describe("Getter", func() {
 			When("the trees endpoint errors", func() {
 				BeforeEach(func() {
 					branchesResponseBody := `{
-  "name": "master",
+  "name": "main",
   "commit": {
 	"sha": "b0012e4930d0a8c350254a3caeedf7441ea286a3",
 	"commit": {
@@ -878,7 +878,7 @@ var _ = Describe("Getter", func() {
 }`
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/master"),
+							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/main"),
 							ghttp.VerifyHeader(http.Header{
 								"User-Agent": expectedUserAgent,
 							}),
