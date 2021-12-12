@@ -5,6 +5,7 @@
 ### Changed
 
 * Changed default branch from `master` to `main`.
+* Updated dependencies.
 
 
 ## 4.0.0 - 2021-11-16
