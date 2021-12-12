@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.0.0 - 2021-12-11
+
+### Changed
+
+* Changed default branch from `master` to `main`.
+
+
 ## 4.0.0 - 2021-11-16
 
 ### Added
