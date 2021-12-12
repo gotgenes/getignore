@@ -82,7 +82,10 @@ var _ = Describe("Getter", func() {
 						),
 					),
 					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/git/trees/5adf061bdde4dd26889be1e74028b2f54aabc346"),
+						ghttp.VerifyRequest(
+							"GET",
+							"/api/v3/repos/github/gitignore/git/trees/5adf061bdde4dd26889be1e74028b2f54aabc346",
+						),
 						ghttp.VerifyHeader(http.Header{
 							"User-Agent": expectedUserAgent,
 						}),
@@ -139,7 +142,11 @@ var _ = Describe("Getter", func() {
 				})
 
 				assertReturnsExpectedFiles(
-					[]string{"Actionscript.gitignore", "Global/Anjuta.gitignore", "community/AWS/SAM.gitignore"},
+					[]string{
+						"Actionscript.gitignore",
+						"Global/Anjuta.gitignore",
+						"community/AWS/SAM.gitignore",
+					},
 					"should return a list of gitignore files",
 				)
 			})
@@ -196,14 +203,21 @@ var _ = Describe("Getter", func() {
 				}`
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/git/trees/5adf061bdde4dd26889be1e74028b2f54aabc346"),
+							ghttp.VerifyRequest(
+								"GET",
+								"/api/v3/repos/github/gitignore/git/trees/5adf061bdde4dd26889be1e74028b2f54aabc346",
+							),
 							ghttp.RespondWith(http.StatusOK, responseBody),
 						),
 					)
 				})
 
 				assertReturnsExpectedFiles(
-					[]string{"Actionscript.gitignore", "Global/Anjuta.gitignore", "community/AWS/SAM.gitignore"},
+					[]string{
+						"Actionscript.gitignore",
+						"Global/Anjuta.gitignore",
+						"community/AWS/SAM.gitignore",
+					},
 					"should filter files with .gitignore suffix",
 				)
 			})
@@ -266,7 +280,11 @@ var _ = Describe("Getter", func() {
 				})
 
 				assertReturnsExpectedFiles(
-					[]string{"Actionscript.gitignore", "Global/Anjuta.gitignore", "community/AWS/SAM.gitignore"},
+					[]string{
+						"Actionscript.gitignore",
+						"Global/Anjuta.gitignore",
+						"community/AWS/SAM.gitignore",
+					},
 					"should return only files",
 				)
 			})
@@ -294,7 +312,10 @@ var _ = Describe("Getter", func() {
 				BeforeEach(func() {
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/main"),
+							ghttp.VerifyRequest(
+								"GET",
+								"/api/v3/repos/github/gitignore/branches/main",
+							),
 							ghttp.VerifyHeader(http.Header{
 								"User-Agent": expectedUserAgent,
 							}),
@@ -313,14 +334,20 @@ var _ = Describe("Getter", func() {
 				BeforeEach(func() {
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/main"),
+							ghttp.VerifyRequest(
+								"GET",
+								"/api/v3/repos/github/gitignore/branches/main",
+							),
 							ghttp.VerifyHeader(http.Header{
 								"User-Agent": expectedUserAgent,
 							}),
 							ghttp.VerifyHeader(http.Header{
 								"Accept": []string{"application/vnd.github.v3+json"},
 							}),
-							ghttp.RespondWith(http.StatusInternalServerError, `{"message": "something went wrong"}`),
+							ghttp.RespondWith(
+								http.StatusInternalServerError,
+								`{"message": "something went wrong"}`,
+							),
 						),
 					)
 				})
@@ -343,7 +370,10 @@ var _ = Describe("Getter", func() {
 }`
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/main"),
+							ghttp.VerifyRequest(
+								"GET",
+								"/api/v3/repos/github/gitignore/branches/main",
+							),
 							ghttp.VerifyHeader(http.Header{
 								"User-Agent": expectedUserAgent,
 							}),
@@ -353,14 +383,20 @@ var _ = Describe("Getter", func() {
 							ghttp.RespondWith(http.StatusOK, branchesResponseBody),
 						),
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/git/trees/5adf061bdde4dd26889be1e74028b2f54aabc346"),
+							ghttp.VerifyRequest(
+								"GET",
+								"/api/v3/repos/github/gitignore/git/trees/5adf061bdde4dd26889be1e74028b2f54aabc346",
+							),
 							ghttp.VerifyHeader(http.Header{
 								"User-Agent": expectedUserAgent,
 							}),
 							ghttp.VerifyHeader(http.Header{
 								"Accept": []string{"application/vnd.github.v3+json"},
 							}),
-							ghttp.RespondWith(http.StatusInternalServerError, `{"message": "something went wrong"}`),
+							ghttp.RespondWith(
+								http.StatusInternalServerError,
+								`{"message": "something went wrong"}`,
+							),
 						),
 					)
 				})
@@ -398,7 +434,10 @@ var _ = Describe("Getter", func() {
 						),
 					),
 					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/git/trees/5adf061bdde4dd26889be1e74028b2f54aabc346"),
+						ghttp.VerifyRequest(
+							"GET",
+							"/api/v3/repos/github/gitignore/git/trees/5adf061bdde4dd26889be1e74028b2f54aabc346",
+						),
 						ghttp.VerifyHeader(http.Header{
 							"User-Agent": expectedUserAgent,
 						}),
@@ -490,7 +529,10 @@ var _ = Describe("Getter", func() {
 				BeforeEach(func() {
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/git/blobs/66fd13c903cac02eb9657cd53fb227823484401d"),
+							ghttp.VerifyRequest(
+								"GET",
+								"/api/v3/repos/github/gitignore/git/blobs/66fd13c903cac02eb9657cd53fb227823484401d",
+							),
 							ghttp.VerifyHeader(http.Header{
 								"User-Agent": expectedUserAgent,
 							}),
@@ -542,7 +584,9 @@ var _ = Describe("Getter", func() {
 
 					It("should return an error", func() {
 						_, err := getter.Get(ctx, []string{"Go.gitignore"})
-						Expect(err).Should(MatchError("error getting files from github/gitignore at main: failed to get the following files: Go.gitignore\nGo.gitignore: failed to download\n"))
+						Expect(
+							err,
+						).Should(MatchError("error getting files from github/gitignore at main: failed to get the following files: Go.gitignore\nGo.gitignore: failed to download\n"))
 					})
 
 					It("should return empty contents", func() {
@@ -586,7 +630,10 @@ var _ = Describe("Getter", func() {
 
 					It("returns the expected error", func() {
 						Eventually(resultsChan).Should(Receive(&results))
-						errorMatchers = append(errorMatchers, HavePrefix("error getting files from github/gitignore at main:"))
+						errorMatchers = append(
+							errorMatchers,
+							HavePrefix("error getting files from github/gitignore at main:"),
+						)
 						Expect(results.Err).Should(MatchError(And(errorMatchers...)))
 					})
 				}
@@ -636,7 +683,10 @@ var _ = Describe("Getter", func() {
 					When("the Ajnuta response is slower", func() {
 						BeforeEach(func() {
 							go func() {
-								contents, err := getter.Get(ctx, []string{"Go.gitignore", "Global/Anjuta.gitignore"})
+								contents, err := getter.Get(
+									ctx,
+									[]string{"Go.gitignore", "Global/Anjuta.gitignore"},
+								)
 								resultsChan <- contentsAndError{Contents: contents, Err: err}
 							}()
 							go func() {
@@ -663,7 +713,10 @@ var _ = Describe("Getter", func() {
 					When("the Go response is slower", func() {
 						BeforeEach(func() {
 							go func() {
-								contents, err := getter.Get(ctx, []string{"Go.gitignore", "Global/Anjuta.gitignore"})
+								contents, err := getter.Get(
+									ctx,
+									[]string{"Go.gitignore", "Global/Anjuta.gitignore"},
+								)
 								resultsChan <- contentsAndError{Contents: contents, Err: err}
 							}()
 							go func() {
@@ -721,7 +774,9 @@ var _ = Describe("Getter", func() {
 								},
 							},
 							ContainSubstring("Nonexistent.gitignore: not present in file tree"),
-							ContainSubstring("Global/Nonexistent.gitignore: not present in file tree"),
+							ContainSubstring(
+								"Global/Nonexistent.gitignore: not present in file tree",
+							),
 						)
 					})
 				})
@@ -734,7 +789,10 @@ var _ = Describe("Getter", func() {
 							anjutaResponseBody = "/.anjuta/\n/.anjuta_sym_db.db\n"
 
 							go func() {
-								contents, err := getter.Get(ctx, []string{"Go.gitignore", "Global/Anjuta.gitignore"})
+								contents, err := getter.Get(
+									ctx,
+									[]string{"Go.gitignore", "Global/Anjuta.gitignore"},
+								)
 								resultsChan <- contentsAndError{Contents: contents, Err: err}
 							}()
 							go func() {
@@ -762,7 +820,10 @@ var _ = Describe("Getter", func() {
 							anjutaStatusCode = http.StatusInternalServerError
 
 							go func() {
-								contents, err := getter.Get(ctx, []string{"Go.gitignore", "Global/Anjuta.gitignore"})
+								contents, err := getter.Get(
+									ctx,
+									[]string{"Go.gitignore", "Global/Anjuta.gitignore"},
+								)
 								resultsChan <- contentsAndError{Contents: contents, Err: err}
 							}()
 							go func() {
@@ -789,7 +850,10 @@ var _ = Describe("Getter", func() {
 							anjutaStatusCode = http.StatusInternalServerError
 
 							go func() {
-								contents, err := getter.Get(ctx, []string{"Go.gitignore", "Global/Anjuta.gitignore"})
+								contents, err := getter.Get(
+									ctx,
+									[]string{"Go.gitignore", "Global/Anjuta.gitignore"},
+								)
 								resultsChan <- contentsAndError{Contents: contents, Err: err}
 							}()
 							go func() {
@@ -829,7 +893,10 @@ var _ = Describe("Getter", func() {
 				BeforeEach(func() {
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/main"),
+							ghttp.VerifyRequest(
+								"GET",
+								"/api/v3/repos/github/gitignore/branches/main",
+							),
 							ghttp.VerifyHeader(http.Header{
 								"User-Agent": expectedUserAgent,
 							}),
@@ -848,14 +915,20 @@ var _ = Describe("Getter", func() {
 				BeforeEach(func() {
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/main"),
+							ghttp.VerifyRequest(
+								"GET",
+								"/api/v3/repos/github/gitignore/branches/main",
+							),
 							ghttp.VerifyHeader(http.Header{
 								"User-Agent": expectedUserAgent,
 							}),
 							ghttp.VerifyHeader(http.Header{
 								"Accept": []string{"application/vnd.github.v3+json"},
 							}),
-							ghttp.RespondWith(http.StatusInternalServerError, `{"message": "something went wrong"}`),
+							ghttp.RespondWith(
+								http.StatusInternalServerError,
+								`{"message": "something went wrong"}`,
+							),
 						),
 					)
 				})
@@ -878,7 +951,10 @@ var _ = Describe("Getter", func() {
 }`
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/branches/main"),
+							ghttp.VerifyRequest(
+								"GET",
+								"/api/v3/repos/github/gitignore/branches/main",
+							),
 							ghttp.VerifyHeader(http.Header{
 								"User-Agent": expectedUserAgent,
 							}),
@@ -888,14 +964,20 @@ var _ = Describe("Getter", func() {
 							ghttp.RespondWith(http.StatusOK, branchesResponseBody),
 						),
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/api/v3/repos/github/gitignore/git/trees/5adf061bdde4dd26889be1e74028b2f54aabc346"),
+							ghttp.VerifyRequest(
+								"GET",
+								"/api/v3/repos/github/gitignore/git/trees/5adf061bdde4dd26889be1e74028b2f54aabc346",
+							),
 							ghttp.VerifyHeader(http.Header{
 								"User-Agent": expectedUserAgent,
 							}),
 							ghttp.VerifyHeader(http.Header{
 								"Accept": []string{"application/vnd.github.v3+json"},
 							}),
-							ghttp.RespondWith(http.StatusInternalServerError, `{"message": "something went wrong"}`),
+							ghttp.RespondWith(
+								http.StatusInternalServerError,
+								`{"message": "something went wrong"}`,
+							),
 						),
 					)
 				})

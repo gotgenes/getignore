@@ -173,7 +173,13 @@ func (g Getter) Get(ctx context.Context, names []string) ([]getignore.NamedConte
 	return namedContents, err
 }
 
-func (g Getter) getBlob(ctx context.Context, pathsToSHAs map[string]string, namesChan chan string, contentsChan chan getignore.NamedContents, failedFilesChan chan getignore.FailedFile) {
+func (g Getter) getBlob(
+	ctx context.Context,
+	pathsToSHAs map[string]string,
+	namesChan chan string,
+	contentsChan chan getignore.NamedContents,
+	failedFilesChan chan getignore.FailedFile,
+) {
 	for name := range namesChan {
 		sha, ok := pathsToSHAs[name]
 		if ok {
@@ -203,11 +209,23 @@ func (g Getter) getBlob(ctx context.Context, pathsToSHAs map[string]string, name
 }
 
 func (g Getter) newListError(err error) error {
-	return fmt.Errorf("error listing contents of %s/%s at %s: %w", g.Owner, g.Repository, g.Branch, err)
+	return fmt.Errorf(
+		"error listing contents of %s/%s at %s: %w",
+		g.Owner,
+		g.Repository,
+		g.Branch,
+		err,
+	)
 }
 
 func (g Getter) newGetError(err error) error {
-	return fmt.Errorf("error getting files from %s/%s at %s: %w", g.Owner, g.Repository, g.Branch, err)
+	return fmt.Errorf(
+		"error getting files from %s/%s at %s: %w",
+		g.Owner,
+		g.Repository,
+		g.Branch,
+		err,
+	)
 }
 
 func (g Getter) getTree(ctx context.Context) (*github.Tree, error) {
@@ -238,7 +256,11 @@ func (g Getter) filterTreeEntries(treeEntries []*github.TreeEntry) []*github.Tre
 	return entries
 }
 
-func (g Getter) startDownloaders(ctx context.Context, numFilesToDownload int, pathsToSHAs map[string]string) (chan string, chan getignore.NamedContents, chan getignore.FailedFile) {
+func (g Getter) startDownloaders(
+	ctx context.Context,
+	numFilesToDownload int,
+	pathsToSHAs map[string]string,
+) (chan string, chan getignore.NamedContents, chan getignore.FailedFile) {
 	namesChan := make(chan string, numFilesToDownload)
 	maxRequests := min(numFilesToDownload, g.MaxRequests)
 	contentsChan := make(chan getignore.NamedContents, numFilesToDownload)
@@ -286,7 +308,11 @@ func createNamesOrdering(names []string) map[string]int {
 	return namesOrdering
 }
 
-func startProcessors(namesOrdering map[string]int, contentsChan chan getignore.NamedContents, failedFilesChan chan getignore.FailedFile) (*sync.WaitGroup, chan []getignore.NamedContents, chan getignore.FailedFiles) {
+func startProcessors(
+	namesOrdering map[string]int,
+	contentsChan chan getignore.NamedContents,
+	failedFilesChan chan getignore.FailedFile,
+) (*sync.WaitGroup, chan []getignore.NamedContents, chan getignore.FailedFiles) {
 	var wg sync.WaitGroup
 	outputChan := make(chan []getignore.NamedContents)
 	errorsChan := make(chan getignore.FailedFiles)
@@ -295,7 +321,12 @@ func startProcessors(namesOrdering map[string]int, contentsChan chan getignore.N
 	return &wg, outputChan, errorsChan
 }
 
-func processContents(contentsChan chan getignore.NamedContents, namesOrdering map[string]int, outputChannel chan []getignore.NamedContents, wg *sync.WaitGroup) {
+func processContents(
+	contentsChan chan getignore.NamedContents,
+	namesOrdering map[string]int,
+	outputChannel chan []getignore.NamedContents,
+	wg *sync.WaitGroup,
+) {
 	var allRetrievedContents []getignore.NamedContents
 	for contents := range contentsChan {
 		allRetrievedContents = append(allRetrievedContents, contents)
@@ -322,7 +353,11 @@ func (cwo *contentsWithOrdering) Less(i, j int) bool {
 	return cwo.ordering[cwo.contents[i].Name] < cwo.ordering[cwo.contents[j].Name]
 }
 
-func processErrors(failedFilesChan chan getignore.FailedFile, errorsChan chan getignore.FailedFiles, wg *sync.WaitGroup) {
+func processErrors(
+	failedFilesChan chan getignore.FailedFile,
+	errorsChan chan getignore.FailedFiles,
+	wg *sync.WaitGroup,
+) {
 	var failedFiles getignore.FailedFiles
 	for failedFile := range failedFilesChan {
 		failedFiles = append(failedFiles, failedFile)
