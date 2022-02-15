@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.0.1 - 2022-02-14
+
+### Changed
+
+- Updated to ginkgo v2.
+- Updated dependencies.
+
 ## 5.0.0 - 2021-12-11
 
 ### Changed
