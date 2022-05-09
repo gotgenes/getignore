@@ -6,7 +6,7 @@ require (
 	github.com/google/go-github/v42 v42.0.0
 	github.com/onsi/ginkgo/v2 v2.1.2
 	github.com/onsi/gomega v1.18.1
-	github.com/urfave/cli/v2 v2.3.0
+	github.com/urfave/cli/v2 v2.6.0
 )
 
 require (
