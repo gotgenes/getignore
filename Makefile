@@ -15,6 +15,11 @@ test:
 	go vet ./...
 	ginkgo -r ${LDFLAGS}
 
+acceptance-test:
+	bats test/
+
+test-all: test acceptance-test
+
 tag:
 	git tag -a -m "Release $(version)" v$(version)
 
@@ -34,4 +39,4 @@ dist: build-all
 	$(DIST_DIRS) tar -zcf {}.tar.gz {} \; && \
 	$(DIST_DIRS) zip -r {}.zip {} \;
 
-.PHONY: build test install dev-install tag clean build-all dist
+.PHONY: build test acceptance-test test-all install dev-install tag clean build-all dist
