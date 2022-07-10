@@ -1,3 +1,5 @@
+bats_require_minimum_version 1.5.0
+
 setup() {
     load 'test_helper/bats-support/load'
     load 'test_helper/bats-assert/load'
@@ -6,7 +8,7 @@ setup() {
 }
 
 @test 'display version' {
-    run getignore --version
+    run -- getignore --version
     assert_output --partial 'getignore version'
 }
 
