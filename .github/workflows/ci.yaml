@@ -12,6 +12,6 @@ jobs:
           go-version: "~1.17.0"
       - name: Install bats-core
         run: |
-          git clone --depth 1 --branch v1.6.0 https://github.com/bats-core/bats-core.git $HOME/bats-core
+          git clone --depth 1 --branch v1.7.0 https://github.com/bats-core/bats-core.git $HOME/bats-core
           echo "$HOME/bats-core/bin" >>"$GITHUB_PATH"
       - run: make dev-install test-all
