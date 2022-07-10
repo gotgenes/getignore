@@ -15,7 +15,7 @@ test:
 	go vet ./...
 	ginkgo -r ${LDFLAGS}
 
-acceptance-test:
+acceptance-test: build
 	bats test/
 
 test-all: test acceptance-test
