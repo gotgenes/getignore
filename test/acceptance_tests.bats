@@ -8,7 +8,7 @@ setup() {
 }
 
 @test 'display version' {
-    run -- getignore --version
+    run getignore --version
     assert_output --partial 'getignore version'
 }
 
