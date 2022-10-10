@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/google/go-github/v45 v45.2.0
 	github.com/onsi/ginkgo/v2 v2.2.0
-	github.com/onsi/gomega v1.20.2
+	github.com/onsi/gomega v1.21.1
 	github.com/urfave/cli/v2 v2.17.1
 )
 
