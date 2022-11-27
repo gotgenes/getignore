@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.0.2 - 2022-11-26
+
+- Updated dependencies.
+
 ## 5.0.1 - 2022-02-14
 
 ### Changed
