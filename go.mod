@@ -3,7 +3,7 @@ module github.com/gotgenes/getignore
 go 1.18
 
 require (
-	github.com/google/go-github/v48 v48.1.0
+	github.com/google/go-github/v48 v48.2.0
 	github.com/onsi/ginkgo/v2 v2.5.1
 	github.com/onsi/gomega v1.24.1
 	github.com/urfave/cli/v2 v2.23.5
