@@ -7,4 +7,5 @@ const (
 	Suffix     = ".gitignore"
 
 	userAgentTemplate = "getignore/%s"
+	MaxRedirects      = 3
 )

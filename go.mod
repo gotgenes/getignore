@@ -3,7 +3,7 @@ module github.com/gotgenes/getignore
 go 1.21
 
 require (
-	github.com/google/go-github/v48 v48.1.0
+	github.com/google/go-github/v58 v58.0.0
 	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.31.1
 	github.com/urfave/cli/v2 v2.27.1
@@ -19,7 +19,6 @@ require (
 	github.com/google/pprof v0.0.0-20240125082051-42cd04596328 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20231213231151-1d8dd44e695e // indirect
-	golang.org/x/crypto v0.18.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect

@@ -35,6 +35,11 @@ var commonFlags = []cli.Flag{
 		Usage:   "The suffix to use to identify ignore files",
 		Value:   github.Suffix,
 	},
+	&cli.IntFlag{
+		Name:  "max-redirects",
+		Usage: "The maximum number of redirects to follow",
+		Value: github.MaxRedirects,
+	},
 }
 
 var stringFlagsToOptions = map[string]func(string) github.GetterOption{

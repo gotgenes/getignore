@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/go-github/v48/github"
+	"github.com/google/go-github/v58/github"
 	"github.com/gotgenes/getignore/pkg/getignore"
 )
 
@@ -20,24 +20,26 @@ var DefaultMaxRequests = runtime.NumCPU() - 1
 
 // Getter lists and gets files using the GitHub tree API.
 type Getter struct {
-	client      *github.Client
-	BaseURL     string
-	Owner       string
-	Repository  string
-	Branch      string
-	Suffix      string
-	MaxRequests int
+	client       *github.Client
+	BaseURL      string
+	Owner        string
+	Repository   string
+	Branch       string
+	Suffix       string
+	MaxRequests  int
+	MaxRedirects int
 }
 
 // getterParams holds parameters for instantiating a Getter
 type getterParams struct {
-	client      *http.Client
-	baseURL     string
-	owner       string
-	repository  string
-	branch      string
-	suffix      string
-	maxRequests int
+	client       *http.Client
+	baseURL      string
+	owner        string
+	repository   string
+	branch       string
+	suffix       string
+	maxRequests  int
+	maxRedirects int
 }
 
 func NewGetter(options ...GetterOption) (Getter, error) {
@@ -55,13 +57,12 @@ func NewGetter(options ...GetterOption) (Getter, error) {
 		ghClient *github.Client
 		err      error
 	)
+	ghClient = github.NewClient(params.client)
 	if params.baseURL != "" {
-		ghClient, err = github.NewEnterpriseClient(params.baseURL, params.baseURL, params.client)
+		ghClient, err = ghClient.WithEnterpriseURLs(params.baseURL, params.baseURL)
 		if err != nil {
 			return Getter{}, err
 		}
-	} else {
-		ghClient = github.NewClient(params.client)
 	}
 	userAgentString := fmt.Sprintf(userAgentTemplate, getignore.Version)
 	ghClient.UserAgent = userAgentString
@@ -124,6 +125,13 @@ func WithSuffix(suffix string) GetterOption {
 func WithMaxRequests(max int) GetterOption {
 	return func(p *getterParams) {
 		p.maxRequests = max
+	}
+}
+
+// WithMaxRedirects sets the number of maximum redirects to follow
+func WithMaxRedirects(max int) GetterOption {
+	return func(p *getterParams) {
+		p.maxRedirects = max
 	}
 }
 
@@ -229,7 +237,7 @@ func (g Getter) newGetError(err error) error {
 }
 
 func (g Getter) getTree(ctx context.Context) (*github.Tree, error) {
-	branch, _, err := g.client.Repositories.GetBranch(ctx, g.Owner, g.Repository, g.Branch, true)
+	branch, _, err := g.client.Repositories.GetBranch(ctx, g.Owner, g.Repository, g.Branch, g.MaxRedirects)
 	if err != nil {
 		return nil, errors.New("unable to get branch information")
 	}
