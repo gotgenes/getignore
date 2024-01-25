@@ -9,7 +9,7 @@ install:
 	go install ${LDFLAGS} ./cmd/getignore
 
 dev-install:
-	go install github.com/onsi/ginkgo/v2/ginkgo@v2.5.1
+	go install github.com/onsi/ginkgo/v2/ginkgo@v2.15.0
 
 test:
 	go vet ./...
