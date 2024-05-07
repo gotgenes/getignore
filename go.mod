@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/google/go-github/v58 v58.0.0
-	github.com/onsi/ginkgo/v2 v2.17.2
+	github.com/onsi/ginkgo/v2 v2.17.3
 	github.com/onsi/gomega v1.33.1
 	github.com/urfave/cli/v2 v2.27.1
 )
