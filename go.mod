@@ -1,6 +1,6 @@
 module github.com/gotgenes/getignore
 
-go 1.21
+go 1.25
 
 require (
 	github.com/google/go-github/v58 v58.0.0

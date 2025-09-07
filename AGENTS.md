@@ -5,7 +5,7 @@
 3. Tests: unit/integration via Ginkgo: `make test` (runs `go vet ./...` then `ginkgo -r`). All tests: `make test-all` (adds Bats acceptance). Single Go test file: `ginkgo -r --focus FileName` or run a package: `ginkgo pkg/getignore -focus ParseNamesFile`; single spec: `ginkgo -r -focus 'ParseNamesFile parses a standard file'`.
 4. Add new test: prefer Ginkgo/Gomega BDD style; suites named `*suite_test.go` calling `RunSpecs`.
 5. Acceptance tests (CLI behaviors): `make acceptance-test` (requires built binary and `bats` supplied via CI; locally install bats if absent).
-6. Dev deps: `make dev-install` (installs pinned Ginkgo); ensure Go ≥ 1.21.
+6. Dev deps: `make dev-install` (installs pinned Ginkgo); ensure Go ≥ 1.25.
 7. Linting: rely on `go vet`; keep code `gofmt`/`goimports` clean; group imports std, third-party, internal, each separated by a blank line.
 8. Naming: exported identifiers use PascalCase with doc comment sentence; unexported camelCase; keep receiver names short (e.g., `g`, `cwo`). Avoid stutter (`getignore.NamedContents` not `GetignoreNamedContents`).
 9. Errors: wrap with `fmt.Errorf("context: %w", err)`; user-facing aggregation uses helper constructors (see `newGetError`, `newListError`); do not leak low-level messages directly.
