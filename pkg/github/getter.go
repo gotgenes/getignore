@@ -44,11 +44,12 @@ type getterParams struct {
 
 func NewGetter(options ...GetterOption) (Getter, error) {
 	params := &getterParams{
-		owner:       Owner,
-		repository:  Repository,
-		branch:      Branch,
-		suffix:      Suffix,
-		maxRequests: DefaultMaxRequests,
+		owner:        Owner,
+		repository:   Repository,
+		branch:       Branch,
+		suffix:       Suffix,
+		maxRequests:  DefaultMaxRequests,
+		maxRedirects: MaxRedirects,
 	}
 	for _, option := range options {
 		option(params)
@@ -67,13 +68,14 @@ func NewGetter(options ...GetterOption) (Getter, error) {
 	userAgentString := fmt.Sprintf(userAgentTemplate, getignore.Version)
 	ghClient.UserAgent = userAgentString
 	return Getter{
-		client:      ghClient,
-		BaseURL:     params.baseURL,
-		Owner:       params.owner,
-		Repository:  params.repository,
-		Branch:      params.branch,
-		Suffix:      params.suffix,
-		MaxRequests: params.maxRequests,
+		client:       ghClient,
+		BaseURL:      params.baseURL,
+		Owner:        params.owner,
+		Repository:   params.repository,
+		Branch:       params.branch,
+		Suffix:       params.suffix,
+		MaxRequests:  params.maxRequests,
+		MaxRedirects: params.maxRedirects,
 	}, nil
 }
 
