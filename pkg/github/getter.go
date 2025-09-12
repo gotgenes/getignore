@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/go-github/v58/github"
+	"github.com/google/go-github/v74/github"
 	"github.com/gotgenes/getignore/pkg/getignore"
 )
 
