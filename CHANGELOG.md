@@ -1,5 +1,16 @@
 # Changelog
 
+## 5.1.0 - TBD
+
+### Added
+
+- Added `AGENTS.md` to assist AI agents in using this project.
+
+### Changed
+
+- Updated dependencies.
+- Updated to Go 1.25.
+
 ## 5.0.3 - 2024-01-25
 
 ### Added
@@ -13,6 +24,7 @@
 ## 5.0.2 - 2022-11-26
 
 ### Changed
+
 - Updated dependencies.
 
 ## 5.0.1 - 2022-02-14
@@ -34,7 +46,6 @@
 ### Added
 
 - Added the following options to `get` command:
-
   - `--base-url`: the base URL to the GitHub REST API v3-compatible server
   - `--owner`: the owner or organization of the repository of gitignore files
   - `--repository`: the name of the repository of gitignore files
@@ -66,7 +77,6 @@
 ### Added
 
 - Added the following options to `list` command:
-
   - `--base-url`: the base URL to the GitHub REST API v3-compatible server
   - `--owner`: the owner or organization of the repository of gitignore files
   - `--repository`: the name of the repository of gitignore files
