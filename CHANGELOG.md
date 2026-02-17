@@ -9,7 +9,7 @@
 ### Changed
 
 - Updated dependencies.
-- Updated to Go 1.25.
+- Updated to Go 1.26.
 
 ## 5.0.3 - 2024-01-25
 
