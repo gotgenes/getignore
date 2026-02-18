@@ -20,6 +20,12 @@ acceptance-test: build
 
 test-all: test acceptance-test
 
+release:
+	./scripts/release.sh
+
+release-dry-run:
+	./scripts/release.sh --dry-run
+
 tag:
 	git tag -a -m "Release $(version)" v$(version)
 
@@ -39,4 +45,4 @@ dist: build-all
 	$(DIST_DIRS) tar -zcf {}.tar.gz {} \; && \
 	$(DIST_DIRS) zip -r {}.zip {} \;
 
-.PHONY: build test acceptance-test test-all install dev-install tag clean build-all dist
+.PHONY: build test acceptance-test test-all install dev-install release release-dry-run tag clean build-all dist
