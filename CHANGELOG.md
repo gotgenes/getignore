@@ -1,7 +1,7 @@
 # Changelog
 
 
-## Unreleased
+## 5.0.4 - 2026-02-18
 
 ### Changed
 
@@ -12,6 +12,8 @@
 - *(deps)* Bump google/go-github to v74.0.0
 - *(agents)* Separate the testing instructions.
 - Upgrade Go to 1.26
+- *(release)* Automate releases with git-cliff
+- *(release)* Automate Homebrew formula updates on release
 
 ### Fixed
 
