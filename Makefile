@@ -41,7 +41,7 @@ build-all:
 	./cmd/getignore
 
 dist: build-all
-	$(DIST_DIRS) cp -r ../LICENSE ../README.md ../completions {} \; && \
+	$(DIST_DIRS) cp -r ../LICENSE ../README.md {} \; && \
 	$(DIST_DIRS) tar -zcf {}.tar.gz {} \; && \
 	$(DIST_DIRS) zip -r {}.zip {} \;
 

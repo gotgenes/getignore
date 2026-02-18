@@ -1,29 +1,30 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/gotgenes/getignore/pkg/getignore"
 )
 
 func main() {
 	log.SetFlags(0)
-	app := creatCLI()
-	err := app.Run(os.Args)
+	cmd := creatCLI()
+	err := cmd.Run(context.Background(), os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func creatCLI() *cli.App {
-	app := cli.NewApp()
-	app.Name = "getignore"
-	app.Version = getignore.Version
-	app.Usage = "Bootstraps gitignore files from central sources"
-	app.EnableBashCompletion = true
-	app.Commands = []*cli.Command{List, Get}
-	return app
+func creatCLI() *cli.Command {
+	return &cli.Command{
+		Name:                  "getignore",
+		Version:               getignore.Version,
+		Usage:                 "Bootstraps gitignore files from central sources",
+		EnableShellCompletion: true,
+		Commands:              []*cli.Command{List, Get},
+	}
 }

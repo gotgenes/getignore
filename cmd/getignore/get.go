@@ -1,13 +1,15 @@
 package main
 
 import (
+	"context"
 	"io"
 	"log"
 	"os"
 
+	"github.com/urfave/cli/v3"
+
 	"github.com/gotgenes/getignore/pkg/getignore"
 	"github.com/gotgenes/getignore/pkg/github"
-	"github.com/urfave/cli/v2"
 )
 
 var Get = &cli.Command{
@@ -35,17 +37,17 @@ var Get = &cli.Command{
 	Action:    getFiles,
 }
 
-func getFiles(ctx *cli.Context) error {
-	names := getNamesFromArguments(ctx)
-	getter, err := newGithubGetter(ctx)
+func getFiles(ctx context.Context, cmd *cli.Command) error {
+	names := getNamesFromArguments(cmd)
+	getter, err := newGithubGetter(cmd)
 	if err != nil {
 		return err
 	}
-	contents, err := getter.Get(ctx.Context, names)
+	contents, err := getter.Get(ctx, names)
 	if err != nil {
 		return err
 	}
-	outputFilePath, outputFile, err := getOutputFile(ctx)
+	outputFilePath, outputFile, err := getOutputFile(cmd)
 	if err != nil {
 		return err
 	}
@@ -57,18 +59,18 @@ func getFiles(ctx *cli.Context) error {
 	return nil
 }
 
-func getNamesFromArguments(c *cli.Context) []string {
-	names := c.Args().Slice()
+func getNamesFromArguments(cmd *cli.Command) []string {
+	names := cmd.Args().Slice()
 
-	if c.String("names-file") != "" {
-		namesFile, _ := os.Open(c.String("names-file"))
+	if cmd.String("names-file") != "" {
+		namesFile, _ := os.Open(cmd.String("names-file"))
 		names = append(names, getignore.ParseNamesFile(namesFile)...)
 	}
 	return names
 }
 
-func getOutputFile(c *cli.Context) (string, io.Writer, error) {
-	outputFilePath := c.String("o")
+func getOutputFile(cmd *cli.Command) (string, io.Writer, error) {
+	outputFilePath := cmd.String("o")
 	var (
 		outputFile io.Writer
 		err        error

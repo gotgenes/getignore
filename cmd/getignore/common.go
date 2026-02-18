@@ -1,8 +1,9 @@
 package main
 
 import (
+	"github.com/urfave/cli/v3"
+
 	"github.com/gotgenes/getignore/pkg/github"
-	"github.com/urfave/cli/v2"
 )
 
 var commonFlags = []cli.Flag{
@@ -50,13 +51,13 @@ var stringFlagsToOptions = map[string]func(string) github.GetterOption{
 	"suffix":     github.WithSuffix,
 }
 
-func newGithubGetter(c *cli.Context) (github.Getter, error) {
+func newGithubGetter(cmd *cli.Command) (github.Getter, error) {
 	var opts []github.GetterOption
-	for _, flagName := range c.FlagNames() {
+	for _, flagName := range cmd.FlagNames() {
 		if flagName == "max-requests" {
-			opts = append(opts, github.WithMaxRequests(c.Int(flagName)))
+			opts = append(opts, github.WithMaxRequests(cmd.Int(flagName)))
 		} else {
-			value := c.String(flagName)
+			value := cmd.String(flagName)
 			optFunc, ok := stringFlagsToOptions[flagName]
 			if ok {
 				opts = append(opts, optFunc(value))

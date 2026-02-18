@@ -132,7 +132,23 @@ getignore list --suffix ''
 
 ## Completion
 
-getignore supports completion of the command line for [Bash](completions/bash/getignore-completion.bash) and [zsh](completions/zsh/_getignore). If completions were not installed by default, please place the respective completion file in the appropriate location for completion scripts on your system.
+getignore has built-in shell completion support for Bash, Zsh, Fish, and PowerShell. To enable completions, source the output of the `completion` subcommand for your shell:
+
+```shell
+# Bash
+source <(getignore completion bash)
+
+# Zsh
+source <(getignore completion zsh)
+
+# Fish
+getignore completion fish | source
+
+# PowerShell
+getignore completion powershell | Invoke-Expression
+```
+
+To persist completions across new shell sessions, add the appropriate line to your shell's configuration file (e.g. `~/.bashrc`, `~/.zshrc`).
 
 
 ## Building

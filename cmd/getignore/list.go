@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 var List = &cli.Command{
@@ -15,12 +15,11 @@ var List = &cli.Command{
 	Action: listIgnoreFiles,
 }
 
-func listIgnoreFiles(c *cli.Context) error {
-	getter, err := newGithubGetter(c)
+func listIgnoreFiles(ctx context.Context, cmd *cli.Command) error {
+	getter, err := newGithubGetter(cmd)
 	if err != nil {
 		return err
 	}
-	ctx := context.Background()
 	ignoreFiles, err := getter.List(ctx)
 	if err != nil {
 		return err
