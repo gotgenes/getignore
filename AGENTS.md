@@ -100,14 +100,14 @@ Releases are automated via `git-cliff` and GitHub Actions.
 
 - Use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 - Use the optional scope field to indicate the area of change, e.g., `getter`, `release`, `deps`, `agents`. If the change is broad, omit the scope.
-- For breaking changes, use the `!` after the type/scope (e.g., `feat!(deps):`) and include a `BREAKING CHANGE:` footer in the commit body explaining the user-facing impact.
+- For breaking changes, use the `!` after the type/scope (e.g., `feat(deps)!:`) and include a `BREAKING CHANGE:` footer in the commit body explaining the user-facing impact.
 - Keep the subject line as a summary of what the changes do. If the reasoning behind the changes needs explanation, provide it in the body.
 - These conventions matter because `git-cliff` parses commit messages to generate the changelog and determine version bumps.
 
 Examples from the project history:
 
 ```
-feat!(deps): upgrade urfave/cli from v2 to v3
+feat(deps)!: upgrade urfave/cli from v2 to v3
 chore(deps): bump google/go-github to v74.0.0
 build(release): automate releases with git-cliff
 chore: upgrade Go to 1.26
