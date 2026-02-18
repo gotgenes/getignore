@@ -1,6 +1,25 @@
 # Changelog
 
 
+## 6.0.0 - 2026-02-18
+
+### Added
+
+- *(deps)* Upgrade urfave/cli from v2 to v3
+
+### Changed
+
+- *(agents)* Add project overview, structure, conventions, and tooling guidance
+- *(deps)* Bump Ginkgo to v2.28.1 and Gomega to v1.39.1
+- *(deps)* Bump google/go-github to v83.0.0
+- *(agents)* Recommend ! notation for breaking changes
+- *(mise)* Pin Go toolchain version to 1.26
+
+### Fixed
+
+- *(release)* Correctly detect breaking changes for major version bumps
+
+
 ## 5.0.4 - 2026-02-18
 
 ### Changed
