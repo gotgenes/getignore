@@ -62,7 +62,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
-          extra_files: LICENSE README.md completions
+          extra_files: LICENSE README.md
           build_command: make
           sha256sum: TRUE
 
@@ -127,8 +127,6 @@ jobs:
 
             def install
               bin.install "getignore"
-              bash_completion.install "completions/bash/getignore-completion.bash"
-              zsh_completion.install "completions/zsh/_getignore"
             end
 
             test do
