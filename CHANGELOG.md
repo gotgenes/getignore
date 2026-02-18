@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 6.0.1 - 2026-02-18
+
+### Changed
+
+- *(release)* Remove deleted completions from release artifacts
+
+
 ## 6.0.0 - 2026-02-18
 
 ### Added
