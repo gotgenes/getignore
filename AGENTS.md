@@ -26,7 +26,6 @@ getignore/
 │   └── acceptance_tests.bats  # Bats acceptance tests (end-to-end)
 ├── scripts/
 │   └── release.sh          # Automated release script (git-cliff)
-├── completions/            # Shell completion scripts (bash, zsh)
 ├── cliff.toml              # git-cliff changelog configuration
 ├── mise.toml               # Tool version manager (Go 1.26)
 ├── Makefile                # Build, test, release targets
@@ -38,7 +37,7 @@ getignore/
 
 1. Build: `make build` (binary at `./getignore`); multi-platform: `make dist`; install locally: `make install`.
 2. Version injection: pass `LDFLAGS` as in Makefile (`-X github.com/gotgenes/getignore/pkg/getignore.Version`); tests/run already include it.
-3. Dev deps: `make dev-install` (installs pinned Ginkgo v2.25.3); ensure Go >= 1.26.
+3. Dev deps: `make dev-install` (installs pinned Ginkgo v2.28.1); ensure Go >= 1.26.
 
 ## Code Style
 
@@ -101,12 +100,14 @@ Releases are automated via `git-cliff` and GitHub Actions.
 
 - Use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 - Use the optional scope field to indicate the area of change, e.g., `getter`, `release`, `deps`, `agents`. If the change is broad, omit the scope.
+- For breaking changes, use the `!` after the type/scope (e.g., `feat!(deps):`) and include a `BREAKING CHANGE:` footer in the commit body explaining the user-facing impact.
 - Keep the subject line as a summary of what the changes do. If the reasoning behind the changes needs explanation, provide it in the body.
 - These conventions matter because `git-cliff` parses commit messages to generate the changelog and determine version bumps.
 
 Examples from the project history:
 
 ```
+feat!(deps): upgrade urfave/cli from v2 to v3
 chore(deps): bump google/go-github to v74.0.0
 build(release): automate releases with git-cliff
 chore: upgrade Go to 1.26
