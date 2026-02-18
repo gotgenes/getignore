@@ -64,3 +64,96 @@ jobs:
           goarch: ${{ matrix.goarch }}
           extra_files: LICENSE README.md completions
           build_command: make
+          sha256sum: TRUE
+
+  update-homebrew:
+    name: Update Homebrew Formula
+    needs: build-artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download checksums from release
+        run: |
+          TAG="${{ github.ref_name }}"
+          for platform in darwin-amd64 darwin-arm64 linux-amd64 linux-arm64; do
+            gh release download "${TAG}" \
+              --repo gotgenes/getignore \
+              --pattern "getignore-${TAG}-${platform}.tar.gz.sha256"
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read checksums
+        id: checksums
+        run: |
+          TAG="${{ github.ref_name }}"
+          echo "darwin_amd64=$(cat "getignore-${TAG}-darwin-amd64.tar.gz.sha256")" >> "${GITHUB_OUTPUT}"
+          echo "darwin_arm64=$(cat "getignore-${TAG}-darwin-arm64.tar.gz.sha256")" >> "${GITHUB_OUTPUT}"
+          echo "linux_amd64=$(cat "getignore-${TAG}-linux-amd64.tar.gz.sha256")" >> "${GITHUB_OUTPUT}"
+          echo "linux_arm64=$(cat "getignore-${TAG}-linux-arm64.tar.gz.sha256")" >> "${GITHUB_OUTPUT}"
+
+      - name: Generate and push formula
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+
+          cat > getignore.rb << 'FORMULA_EOF'
+          class Getignore < Formula
+            desc "Bootstraps .gitignore files from GitHub gitignore templates"
+            homepage "https://github.com/gotgenes/getignore"
+            version "VERSION_PLACEHOLDER"
+            license "MIT"
+
+            on_macos do
+              on_intel do
+                url "https://github.com/gotgenes/getignore/releases/download/TAG_PLACEHOLDER/getignore-TAG_PLACEHOLDER-darwin-amd64.tar.gz"
+                sha256 "DARWIN_AMD64_SHA256"
+              end
+              on_arm do
+                url "https://github.com/gotgenes/getignore/releases/download/TAG_PLACEHOLDER/getignore-TAG_PLACEHOLDER-darwin-arm64.tar.gz"
+                sha256 "DARWIN_ARM64_SHA256"
+              end
+            end
+
+            on_linux do
+              on_intel do
+                url "https://github.com/gotgenes/getignore/releases/download/TAG_PLACEHOLDER/getignore-TAG_PLACEHOLDER-linux-amd64.tar.gz"
+                sha256 "LINUX_AMD64_SHA256"
+              end
+              on_arm do
+                url "https://github.com/gotgenes/getignore/releases/download/TAG_PLACEHOLDER/getignore-TAG_PLACEHOLDER-linux-arm64.tar.gz"
+                sha256 "LINUX_ARM64_SHA256"
+              end
+            end
+
+            def install
+              bin.install "getignore"
+              bash_completion.install "completions/bash/getignore-completion.bash"
+              zsh_completion.install "completions/zsh/_getignore"
+            end
+
+            test do
+              system bin/"getignore", "--version"
+            end
+          end
+          FORMULA_EOF
+
+          # Substitute placeholders
+          sed -i "s/VERSION_PLACEHOLDER/${VERSION}/g" getignore.rb
+          sed -i "s/TAG_PLACEHOLDER/${TAG}/g" getignore.rb
+          sed -i "s/DARWIN_AMD64_SHA256/${{ steps.checksums.outputs.darwin_amd64 }}/g" getignore.rb
+          sed -i "s/DARWIN_ARM64_SHA256/${{ steps.checksums.outputs.darwin_arm64 }}/g" getignore.rb
+          sed -i "s/LINUX_AMD64_SHA256/${{ steps.checksums.outputs.linux_amd64 }}/g" getignore.rb
+          sed -i "s/LINUX_ARM64_SHA256/${{ steps.checksums.outputs.linux_arm64 }}/g" getignore.rb
+
+          # Clone the tap, update the formula, commit and push
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/gotgenes/homebrew-gotgenes.git" tap
+          cp getignore.rb tap/Formula/getignore.rb
+
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/getignore.rb
+          git commit -m "getignore ${VERSION}"
+          git push
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}

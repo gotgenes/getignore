@@ -115,6 +115,7 @@ if [[ "${DRY_RUN}" == true ]]; then
     echo "  3. Tag: ${NEXT_VERSION}"
     echo "  4. Push commit and tag to origin"
     echo "  5. CI will create a GitHub Release and build artifacts"
+    echo "  6. CI will update the Homebrew formula in gotgenes/homebrew-gotgenes"
     exit 0
 fi
 
@@ -139,5 +140,6 @@ echo ""
 echo "The tag push will trigger the CI release workflow, which will:"
 echo "  1. Create a GitHub Release with changelog notes"
 echo "  2. Build and upload binaries for all platforms"
+echo "  3. Update the Homebrew formula in gotgenes/homebrew-gotgenes"
 echo ""
 echo "Monitor progress at: https://github.com/gotgenes/getignore/actions"
