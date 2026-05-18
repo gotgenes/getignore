@@ -5,7 +5,7 @@ go 1.25
 require (
 	github.com/google/go-github/v83 v83.0.0
 	github.com/onsi/ginkgo/v2 v2.28.1
-	github.com/onsi/gomega v1.39.1
+	github.com/onsi/gomega v1.41.0
 	github.com/urfave/cli/v3 v3.6.2
 )
 
